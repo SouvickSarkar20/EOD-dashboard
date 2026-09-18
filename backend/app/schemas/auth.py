@@ -1,6 +1,6 @@
 import uuid
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from app.models.user import UserRole, UserStatus
 
 class LoginRequest(BaseModel):
@@ -25,12 +25,28 @@ class UserProfileSchema(BaseModel):
     is_demo_creds: bool
     must_change_password: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UpdateCredentialsRequest(BaseModel):
     new_email: EmailStr
+    new_password: str = Field(..., min_length=8, description="New strong password (min 8 characters)")
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
     new_password: str = Field(..., min_length=8, description="New strong password")
 
-class Supabase2FAVerifyRequest(BaseModel):
-    totp_code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code from Authenticator app")
+class MFAEnrollResponse(BaseModel):
+    secret: str
+    qr_code: str
+    uri: str
+    factor_id: str
+
+class Verify2FARequest(BaseModel):
+    totp_code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
+    secret: Optional[str] = Field(None, description="Optional TOTP secret if verifying enrollment")
+
+class MFAVerifyResponse(BaseModel):
+    success: bool
+    message: str
+    access_token: Optional[str] = None
+    user: Optional[UserProfileSchema] = None
