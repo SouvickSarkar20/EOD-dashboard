@@ -34,10 +34,13 @@ export function Login() {
         setTempToken(data.access_token);
         navigate('/verify-2fa');
       } else {
-        // Direct login success (DM or Admin without 2FA)
+        // Direct login success
         setAuth(data.user, data.access_token);
         
-        if (data.user.must_change_password) {
+        // Sequence: If Admin is using demo creds, prompt credential update first
+        if (data.user.role === 'admin' && (data.user.is_demo_creds || data.is_demo_creds)) {
+          navigate('/update-credentials');
+        } else if (data.user.must_change_password) {
           navigate('/change-password');
         } else {
           navigate('/dashboard');
@@ -135,7 +138,7 @@ export function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setShowPassword(!showPassword)}
                   placeholder="Enter your password"
                   required
                   className="w-full pl-11 pr-11 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm transition"

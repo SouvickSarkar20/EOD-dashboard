@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { QrCode, ShieldCheck, ArrowRight, AlertCircle, CheckCircle2, Copy } from 'lucide-react';
+import { QrCode, ShieldCheck, ArrowRight, AlertCircle, CheckCircle2, Copy, Smartphone } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
 export function SetupSupabaseMFA() {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
 
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
@@ -25,9 +24,18 @@ export function SetupSupabaseMFA() {
     try {
       const response = await api.post('/api/auth/admin/supabase-2fa/enroll');
       const data = response.data;
-      setQrCodeUrl(data.qr_code_svg || data.qr_code_url);
-      setSecret(data.secret);
-      setFactorId(data.factor_id);
+      
+      const secretKey = data.secret;
+      const uri = data.uri || `otpauth://totp/EOD%20Admin%20Dashboard?secret=${secretKey}&issuer=EOD%20Admin%20Dashboard`;
+      
+      // Use qr_code if provided or generate crisp QR via qrserver API
+      const qrImage = data.qr_code && data.qr_code.startsWith('http') 
+        ? data.qr_code 
+        : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uri)}`;
+
+      setQrCodeUrl(qrImage);
+      setSecret(secretKey);
+      setFactorId(data.factor_id || 'supabase_totp');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to generate 2FA security QR Code.');
     } finally {
@@ -49,6 +57,7 @@ export function SetupSupabaseMFA() {
       await api.post('/api/auth/admin/supabase-2fa/verify-enrollment', {
         factor_id: factorId,
         totp_code: totpCode,
+        secret: secret
       });
 
       updateUser({ is_2fa_enabled: true });
@@ -80,11 +89,23 @@ export function SetupSupabaseMFA() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Set Up Two-Factor Authentication</h1>
           <p className="text-slate-300 text-sm">
-            Add an extra layer of protection to your Administrator account
+            Step 2 of 2: Protect your Administrator account with 2FA
           </p>
         </div>
 
         <div className="p-8 space-y-6">
+
+          {/* Step indicator */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-2 text-slate-500">
+              <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px]">1</span>
+              <span>Step 1: Custom Credentials</span>
+            </div>
+            <div className="flex items-center space-x-2 text-blue-900 font-semibold">
+              <span className="w-5 h-5 rounded-full bg-blue-900 text-white flex items-center justify-center text-[10px]">2</span>
+              <span>Step 2: 2FA Protection</span>
+            </div>
+          </div>
           
           {success ? (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center space-y-3">
@@ -93,7 +114,7 @@ export function SetupSupabaseMFA() {
               </div>
               <h3 className="text-lg font-bold text-emerald-900">2FA Security Enabled!</h3>
               <p className="text-slate-600 text-xs">
-                Your account is now protected with Supabase Two-Factor Authentication. Redirecting to dashboard...
+                Your account is now fully protected with Two-Factor Authentication. Redirecting to dashboard...
               </p>
             </div>
           ) : (
@@ -133,18 +154,12 @@ export function SetupSupabaseMFA() {
                 <div className="space-y-6">
                   {/* Step 1 */}
                   <div className="space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-blue-900">
-                      Step 1: Scan with Authenticator App
-                    </p>
+                    <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-blue-900">
+                      <Smartphone className="w-4 h-4" />
+                      <span>Scan with Authenticator App</span>
+                    </div>
                     <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                      {qrCodeUrl.startsWith('data:image') || qrCodeUrl.startsWith('http') ? (
-                        <img src={qrCodeUrl} alt="2FA QR Code" className="w-48 h-48 rounded-lg shadow-sm" />
-                      ) : (
-                        <div
-                          className="w-48 h-48 bg-white p-2 border border-slate-200 rounded-lg flex items-center justify-center text-xs"
-                          dangerouslySetInnerHTML={{ __html: qrCodeUrl }}
-                        />
-                      )}
+                      <img src={qrCodeUrl} alt="2FA QR Code" className="w-48 h-48 rounded-lg shadow-sm border border-slate-200 bg-white p-2" />
                     </div>
                   </div>
 
@@ -153,7 +168,7 @@ export function SetupSupabaseMFA() {
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
                       <div className="text-xs space-y-0.5">
                         <span className="text-slate-500 block">Manual Secret Key:</span>
-                        <span className="font-mono font-bold text-slate-800">{secret}</span>
+                        <span className="font-mono font-bold text-slate-800 tracking-wider">{secret}</span>
                       </div>
                       <button
                         type="button"
@@ -169,7 +184,7 @@ export function SetupSupabaseMFA() {
                   {/* Step 2 */}
                   <form onSubmit={handleVerifyEnrollment} className="space-y-4 pt-2">
                     <p className="text-xs font-bold uppercase tracking-wider text-blue-900">
-                      Step 2: Enter Verification Code
+                      Enter 6-Digit Code from App
                     </p>
                     <input
                       type="text"
@@ -207,7 +222,7 @@ export function SetupSupabaseMFA() {
               onClick={() => navigate('/dashboard')}
               className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
             >
-              Cancel and Return to Dashboard
+              Skip and Go to Dashboard
             </button>
           </div>
 
