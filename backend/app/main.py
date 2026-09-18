@@ -1,10 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.routers import (
+    auth,
+    district_managers,
+    monthly,
+    daily,
+    filters,
+    anomalies,
+    exports,
+    audit_log,
+)
 
 app = FastAPI(
     title="EOD Management & Analytics Dashboard API",
-    description="Backend API providing supervision, analytics, and Supabase 2FA authentication for EOD operation.",
+    description="Backend API providing operation supervision, analytics, and Supabase 2FA authentication for EOD operation.",
     version="1.0.0",
 )
 
@@ -22,6 +32,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register API Routers
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(district_managers.router, prefix="/api/district-managers", tags=["District Managers"])
+app.include_router(monthly.router, prefix="/api/monthly", tags=["Monthly Analytics"])
+app.include_router(daily.router, prefix="/api/daily", tags=["Daily Analytics"])
+app.include_router(filters.router, prefix="/api/filters", tags=["Filter Options"])
+app.include_router(anomalies.router, prefix="/api/anomalies", tags=["Anomaly Detection"])
+app.include_router(exports.router, prefix="/api/exports", tags=["Data Exports"])
+app.include_router(audit_log.router, prefix="/api/audit-log", tags=["Audit Log"])
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():
