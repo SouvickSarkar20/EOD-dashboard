@@ -6,9 +6,9 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from sqlalchemy import select
-from app.database import AsyncSessionLocal
+from app.database import AsyncSessionLocal, engine
 from app.models import AdminUser, UserRole
-from app.utils.security import hash_password
+from app.utils.security import get_password_hash
 
 async def reset_admin_2fa():
     """Reset Admin 2FA status and restore initial demo credentials."""
@@ -25,13 +25,16 @@ async def reset_admin_2fa():
         admin.supabase_user_id = None
         admin.is_demo_creds = True
         admin.must_change_password = False
-        admin.password_hash = hash_password("AdminDemo123!")
+        admin.password_hash = get_password_hash("AdminDemo123!")
 
         await db.commit()
         print("Successfully reset Admin 2FA enrollment and restored initial demo credentials!")
         print(f"Email: {admin.email}")
         print("Password: AdminDemo123!")
         print("2FA Enabled: False")
+
+    # Clean engine shutdown
+    await engine.dispose()
 
 if __name__ == "__main__":
     asyncio.run(reset_admin_2fa())

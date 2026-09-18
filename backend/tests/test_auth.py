@@ -1,6 +1,9 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select
 from app.main import app
+from app.database import AsyncSessionLocal
+from app.models import AdminUser
 
 @pytest.mark.asyncio
 async def test_admin_demo_login():
@@ -70,3 +73,11 @@ async def test_supabase_2fa_enrollment_and_verification():
         })
         assert verify_res.status_code == 200
         assert verify_res.json()["success"] is True
+
+    # 3. Cleanup: reset is_2fa_enabled to False so test run doesn't leave DB with 2FA enabled
+    async with AsyncSessionLocal() as db:
+        res = await db.execute(select(AdminUser).where(AdminUser.email == "admin@demo.com"))
+        admin = res.scalar_one_or_none()
+        if admin:
+            admin.is_2fa_enabled = False
+            await db.commit()
