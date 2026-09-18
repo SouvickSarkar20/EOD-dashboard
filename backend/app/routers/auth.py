@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.dependencies.db import get_db
 from app.dependencies.auth import get_current_user, require_admin
-from app.models import AdminUser, UserStatus, AuditLog
+from app.models import AdminUser, UserStatus, UserRole, AuditLog
 from app.schemas.auth import (
     LoginRequest, TokenResponse, UserProfileSchema,
     UpdateCredentialsRequest, ChangePasswordRequest,
