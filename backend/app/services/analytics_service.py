@@ -23,6 +23,25 @@ from app.schemas.filters import (
 class AnalyticsService:
 
     @staticmethod
+    async def resolve_dm_uuid(db: AsyncSession, dm_id: Optional[Any]) -> Optional[uuid.UUID]:
+        if not dm_id:
+            return None
+        if isinstance(dm_id, uuid.UUID):
+            return dm_id
+        dm_str = str(dm_id).strip().strip('()')
+        if not dm_str:
+            return None
+        try:
+            return uuid.UUID(dm_str)
+        except ValueError:
+            pass
+        stmt = select(AdminUser.id).where(
+            or_(AdminUser.dmid == dm_str, AdminUser.dmid == f"({dm_str})", AdminUser.dmid == f"{dm_str}")
+        )
+        res = await db.execute(stmt)
+        return res.scalar_one_or_none()
+
+    @staticmethod
     async def get_monthly_records(
         db: AsyncSession,
         month: Optional[int] = None,

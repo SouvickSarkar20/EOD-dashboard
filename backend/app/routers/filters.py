@@ -15,7 +15,7 @@ router = APIRouter()
 async def get_filter_options(
     month: Optional[int] = Query(None, description="Selected enrollment month YYYYMM"),
     district_id: Optional[int] = Query(None, description="Selected District ID"),
-    dm_id: Optional[uuid.UUID] = Query(None, description="Selected DM User UUID"),
+    dm_id: Optional[str] = Query(None, description="Selected DM User UUID or DMID string"),
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(require_mfa)
 ):
@@ -23,9 +23,10 @@ async def get_filter_options(
     Fetch period-aware cascading filter choices:
     Returns available months, districts, DMs, stations, and operators based on selected period and filters.
     """
+    resolved_dm_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
     return await AnalyticsService.get_cascading_filter_options(
         db=db,
         month=month,
         district_id=district_id,
-        dm_id=dm_id
+        dm_id=resolved_dm_uuid
     )

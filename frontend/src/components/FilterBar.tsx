@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Filter, Calendar, MapPin, User, RotateCcw } from 'lucide-react';
+import { Filter, Calendar, MapPin, User, RotateCcw, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFilterStore } from '../store/filterStore';
 import { useAuthStore } from '../store/authStore';
@@ -10,9 +10,11 @@ interface DistrictOption {
 }
 
 interface DmOption {
-  dm_user_id: string;
-  dm_name: string;
+  id?: string;
+  dm_user_id?: string;
   dmid: string;
+  name?: string;
+  dm_name?: string;
 }
 
 interface FilterOptionsResponse {
@@ -74,9 +76,19 @@ export function FilterBar() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         
         {/* Left Label */}
-        <div className="flex items-center space-x-2 text-slate-800 font-bold text-sm tracking-wide">
-          <Filter className="w-5 h-5 text-blue-900" />
-          <span>Filter Records:</span>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 text-slate-800 font-bold text-sm tracking-wide">
+            <Filter className="w-5 h-5 text-blue-900" />
+            <span>Filter Records:</span>
+          </div>
+
+          {/* Active Loading Spinner */}
+          {loading && (
+            <div className="flex items-center space-x-2 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl animate-pulse">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-900" />
+              <span>Updating Data...</span>
+            </div>
+          )}
         </div>
 
         {/* Filter Controls */}
@@ -132,11 +144,15 @@ export function FilterBar() {
                 className="pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer shadow-sm"
               >
                 <option value="">All District Managers</option>
-                {options.district_managers.map((dm) => (
-                  <option key={dm.dm_user_id} value={dm.dm_user_id}>
-                    {dm.dm_name} ({dm.dmid})
-                  </option>
-                ))}
+                {options.district_managers.map((dm) => {
+                  const val = dm.id || dm.dm_user_id || dm.dmid;
+                  const label = dm.name || dm.dm_name || dm.dmid;
+                  return (
+                    <option key={val} value={val}>
+                      {label} ({dm.dmid})
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}

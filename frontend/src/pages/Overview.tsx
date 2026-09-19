@@ -25,7 +25,10 @@ import {
   ArrowDownRight,
   Info,
   Trophy,
-  ArrowRight
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+  RotateCcw
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useFilterStore } from '../store/filterStore';
@@ -71,7 +74,7 @@ const COLORS = ['#1E3A8A', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#1E293B'
 export function Overview() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const { month, districtId, dmId } = useFilterStore();
+  const { month, districtId, dmId, resetFilters } = useFilterStore();
 
   const [data, setData] = useState<MonthlySummaryOverview | null>(null);
   const [anomalyCount, setAnomalyCount] = useState<number>(0);
@@ -99,41 +102,32 @@ export function Overview() {
       setData(summaryRes.data);
       setAnomalyCount(anomalyRes.data.total_anomalies || 0);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load executive overview analytics.');
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      
+      if (status === 422) {
+        setError('Invalid filter selection format. Please click Reset Filters to restore default views.');
+      } else {
+        setError(detail || 'Unable to load analytics data for the selected filter combination.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading && !data) {
-    return (
-      <div className="flex flex-col items-center justify-center p-16 space-y-4">
-        <div className="w-12 h-12 border-4 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm font-semibold text-slate-600">Loading Executive Analytics...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-red-800 space-y-2">
-        <h3 className="text-base font-bold">Analytics Loading Error</h3>
-        <p className="text-sm">{error}</p>
-        <button
-          onClick={fetchOverviewData}
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-semibold"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
   const kpis = data?.kpis;
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 relative">
       
+      {/* Loading Overlay Bar */}
+      {loading && (
+        <div className="bg-blue-900 text-white px-5 py-2.5 rounded-xl shadow-md flex items-center space-x-3 text-xs font-semibold animate-pulse">
+          <Loader2 className="w-4 h-4 animate-spin text-white" />
+          <span>Updating Dashboard Analytics for selected filter...</span>
+        </div>
+      )}
+
       {/* Non-Tech Help & Context Banner */}
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex items-start space-x-4">
         <div className="p-2.5 rounded-xl bg-blue-900 text-white flex-shrink-0 mt-0.5">
@@ -148,8 +142,29 @@ export function Overview() {
         </div>
       </div>
 
+      {/* Error Callout if query fails */}
+      {error && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-900 space-y-3 shadow-sm">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-6 h-6 text-amber-700" />
+            <h3 className="text-base font-bold">Unable to Display Analytics for Selected Filter</h3>
+          </div>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            {error}
+          </p>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="inline-flex items-center space-x-2 px-4 py-2.5 bg-blue-900 text-white rounded-xl text-xs font-semibold shadow-sm hover:bg-blue-950 transition"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Reset All Filters to Default</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Metric Cards (4 KPI Tiles) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 transition-opacity ${loading ? 'opacity-60' : 'opacity-100'}`}>
         
         {/* Card 1: Total Enrollments */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
@@ -261,9 +276,9 @@ export function Overview() {
       </div>
 
       {/* Visual Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-8 transition-opacity ${loading ? 'opacity-60' : 'opacity-100'}`}>
         
-        {/* District Comparison Bar Chart (Spans 2 columns) */}
+        {/* District Comparison Bar Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
@@ -342,7 +357,7 @@ export function Overview() {
       </div>
 
       {/* Month-over-Month Growth Trend Line Chart */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <div className={`bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 transition-opacity ${loading ? 'opacity-60' : 'opacity-100'}`}>
         <div className="border-b border-slate-100 pb-4">
           <h3 className="text-base font-bold text-slate-900">Monthly Enrollment Growth Trajectory</h3>
           <p className="text-xs text-slate-500">Historical enrollment volume trajectory over time</p>
@@ -368,7 +383,7 @@ export function Overview() {
       </div>
 
       {/* District Manager Leaderboard Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+      <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6 transition-opacity ${loading ? 'opacity-60' : 'opacity-100'}`}>
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
             <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">

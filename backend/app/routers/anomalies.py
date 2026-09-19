@@ -8,6 +8,7 @@ from app.dependencies.auth import require_mfa
 from app.models import AdminUser
 from app.schemas.anomaly import AnomalyListResponse, AnomalySummaryResponse
 from app.services.anomaly_service import AnomalyService
+from app.services.analytics_service import AnalyticsService
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ router = APIRouter()
 async def get_anomalies(
     month: Optional[int] = Query(None, description="Target enrollment month YYYYMM (e.g. 202601)"),
     district_id: Optional[int] = Query(None, description="Filter by District ID"),
-    dm_id: Optional[uuid.UUID] = Query(None, description="Filter by District Manager UUID"),
+    dm_id: Optional[str] = Query(None, description="Filter by District Manager UUID or DMID string"),
     anomaly_type: Optional[str] = Query(None, description="Filter by Anomaly Type: DM_DECLINE | SILENT_STATION | LOW_PERFORMER | ZERO_ACTIVITY"),
     severity: Optional[str] = Query(None, description="Filter by Severity: HIGH | MEDIUM | LOW"),
     threshold_decline_pct: float = Query(20.0, ge=1.0, le=100.0, description="DM decline percentage threshold"),
@@ -28,11 +29,12 @@ async def get_anomalies(
     Detects DM performance declines (>=20% MoM drop), silent stations (>=7 days inactive),
     low performing stations (bottom 10th percentile), and zero activity operational days.
     """
+    resolved_dm_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
     return await AnomalyService.get_anomalies(
         db=db,
         month=month,
         district_id=district_id,
-        dm_id=dm_id,
+        dm_id=resolved_dm_uuid,
         anomaly_type=anomaly_type,
         severity=severity,
         threshold_decline_pct=threshold_decline_pct,
@@ -43,16 +45,17 @@ async def get_anomalies(
 async def get_anomalies_summary(
     month: Optional[int] = Query(None, description="Target enrollment month YYYYMM"),
     district_id: Optional[int] = Query(None, description="Filter by District ID"),
-    dm_id: Optional[uuid.UUID] = Query(None, description="Filter by District Manager UUID"),
+    dm_id: Optional[str] = Query(None, description="Filter by District Manager UUID or DMID string"),
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(require_mfa)
 ):
     """
     Fetch aggregate summary of anomalies grouped by anomaly type and severity.
     """
+    resolved_dm_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
     return await AnomalyService.get_anomalies_summary(
         db=db,
         month=month,
         district_id=district_id,
-        dm_id=dm_id
+        dm_id=resolved_dm_uuid
     )

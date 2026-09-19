@@ -25,6 +25,7 @@ async def reset_admin_2fa():
         admin.supabase_user_id = None
         admin.is_demo_creds = True
         admin.must_change_password = False
+        admin.email = "admin@demo.com"
         admin.password_hash = get_password_hash("AdminDemo123!")
 
         await db.commit()
