@@ -48,7 +48,6 @@ export function FilterBar() {
       const data: FilterOptionsResponse = response.data;
       setOptions(data);
 
-      // Auto-select latest month if none selected
       if (!month && data.available_months.length > 0) {
         setMonth(data.available_months[0]);
       }
@@ -71,27 +70,27 @@ export function FilterBar() {
   };
 
   return (
-    <div className="bg-white border-b border-slate-200 px-6 py-3.5 shadow-sm sticky top-0 z-20">
+    <div className="bg-white border-b border-slate-200 px-8 py-4 shadow-sm sticky top-0 z-20">
       <div className="flex flex-wrap items-center justify-between gap-4">
         
         {/* Left Label */}
-        <div className="flex items-center space-x-2 text-slate-800 font-semibold text-xs uppercase tracking-wider">
-          <Filter className="w-4 h-4 text-blue-900" />
-          <span>Filter Records</span>
+        <div className="flex items-center space-x-2 text-slate-800 font-bold text-sm tracking-wide">
+          <Filter className="w-5 h-5 text-blue-900" />
+          <span>Filter Records:</span>
         </div>
 
         {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4">
           
           {/* Month Selector */}
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               <Calendar className="w-4 h-4" />
             </div>
             <select
               value={month || ''}
               onChange={(e) => setMonth(e.target.value ? parseInt(e.target.value, 10) : null)}
-              className="pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+              className="pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer shadow-sm"
             >
               <option value="">All Available Months</option>
               {options.available_months.map((m) => (
@@ -104,13 +103,13 @@ export function FilterBar() {
 
           {/* District Selector */}
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               <MapPin className="w-4 h-4" />
             </div>
             <select
               value={districtId || ''}
               onChange={(e) => setDistrictId(e.target.value ? parseInt(e.target.value, 10) : null)}
-              className="pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+              className="pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer shadow-sm"
             >
               <option value="">All Districts ({options.districts.length})</option>
               {options.districts.map((d) => (
@@ -121,16 +120,16 @@ export function FilterBar() {
             </select>
           </div>
 
-          {/* DM Selector (Only show if Admin or multiple DMs) */}
+          {/* DM Selector */}
           {currentUser?.role === 'admin' && (
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <User className="w-4 h-4" />
               </div>
               <select
                 value={dmId || ''}
                 onChange={(e) => setDmId(e.target.value || null)}
-                className="pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                className="pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer shadow-sm"
               >
                 <option value="">All District Managers</option>
                 {options.district_managers.map((dm) => (
@@ -147,11 +146,11 @@ export function FilterBar() {
             <button
               type="button"
               onClick={resetFilters}
-              className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+              className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition border border-slate-200"
               title="Reset all filters to default"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset</span>
+              <RotateCcw className="w-4 h-4" />
+              <span>Reset Filters</span>
             </button>
           )}
 

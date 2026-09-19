@@ -6,6 +6,7 @@ import { Verify2FA } from './pages/Verify2FA';
 import { UpdateCredentials } from './pages/UpdateCredentials';
 import { SetupSupabaseMFA } from './pages/SetupSupabaseMFA';
 import { ChangePassword } from './pages/ChangePassword';
+import { Overview } from './pages/Overview';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
 
@@ -14,18 +15,7 @@ function RootRedirect() {
   return token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 }
 
-// Temporary page placeholders until Phase 11-14 pages are built
-function OverviewPlaceholder() {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-      <h2 className="text-xl font-bold text-slate-900">Executive Overview</h2>
-      <p className="text-xs text-slate-600">
-        Phase 11 Overview Dashboard will display KPI Cards, District Performance Charts, MoM Line Charts, and DM Rankings.
-      </p>
-    </div>
-  );
-}
-
+// Temporary placeholders for remaining pages (Phases 12-15)
 function DmsPlaceholder() {
   return (
     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
@@ -133,7 +123,7 @@ export function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<OverviewPlaceholder />} />
+          <Route index element={<Overview />} />
           <Route
             path="dms"
             element={

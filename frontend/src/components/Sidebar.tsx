@@ -68,26 +68,26 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen border-r border-slate-800">
+    <aside className="w-72 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen border-r border-slate-800">
       
       {/* App Branding */}
-      <div className="p-6 border-b border-slate-800 flex items-center space-x-3">
-        <div className="p-2.5 rounded-xl bg-blue-700 text-white shadow-md">
-          <Shield className="w-6 h-6" />
+      <div className="p-6 border-b border-slate-800 flex items-center space-x-3.5">
+        <div className="p-3 rounded-xl bg-blue-700 text-white shadow-md">
+          <Shield className="w-7 h-7" />
         </div>
         <div>
-          <h2 className="text-base font-bold text-white tracking-tight leading-tight">
+          <h2 className="text-lg font-bold text-white tracking-tight leading-tight">
             EOD Operations
           </h2>
-          <span className="text-[11px] text-slate-400 font-medium">
-            Management Dashboard
+          <span className="text-xs text-slate-400 font-medium">
+            Supervision & Analytics
           </span>
         </div>
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-        <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <nav className="flex-1 p-5 space-y-2 overflow-y-auto">
+        <div className="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
           Navigation Menu
         </div>
 
@@ -104,14 +104,14 @@ export function Sidebar() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition ${
+                `flex items-center space-x-3.5 px-4 py-3.5 rounded-xl text-sm font-semibold transition ${
                   isActive
                     ? 'bg-blue-800 text-white shadow-md font-bold'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`
               }
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              <Icon className="w-5 h-5 flex-shrink-0" />
               <span>{item.label}</span>
             </NavLink>
           );
@@ -119,14 +119,14 @@ export function Sidebar() {
       </nav>
 
       {/* User Status Card at Sidebar Bottom */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/50">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-full bg-blue-900 text-white font-bold flex items-center justify-center text-xs">
+      <div className="p-5 border-t border-slate-800 bg-slate-950/50">
+        <div className="flex items-center space-x-3.5">
+          <div className="w-10 h-10 rounded-full bg-blue-900 text-white font-bold flex items-center justify-center text-sm shadow">
             {user?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white truncate">{user?.name}</p>
-            <p className="text-[10px] text-slate-400 truncate capitalize">{user?.role}</p>
+            <p className="text-sm font-bold text-white truncate">{user?.name}</p>
+            <p className="text-xs text-slate-400 truncate capitalize">{user?.role}</p>
           </div>
         </div>
       </div>
