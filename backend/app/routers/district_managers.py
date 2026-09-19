@@ -12,6 +12,8 @@ from app.schemas.district_manager import (
 from app.utils.pagination import PaginatedResponse, create_paginated_response
 from app.services.dm_service import DMService
 
+from app.services.analytics_service import AnalyticsService
+
 router = APIRouter()
 
 @router.get("/", response_model=PaginatedResponse[DMListItem])
@@ -53,12 +55,18 @@ async def create_district_manager(
 
 @router.get("/{dm_id}", response_model=DMDetail)
 async def get_district_manager(
-    dm_id: uuid.UUID,
+    dm_id: str,
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(require_mfa)
 ):
     """Get full details and station assignments of a single District Manager."""
-    detail = await DMService.get_dm_detail(db, dm_id)
+    resolved_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
+    if not resolved_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"District Manager with ID '{dm_id}' not found"
+        )
+    detail = await DMService.get_dm_detail(db, resolved_uuid)
     if not detail:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -67,18 +75,25 @@ async def get_district_manager(
     return detail
 
 @router.patch("/{dm_id}", response_model=DMDetail)
+@router.put("/{dm_id}", response_model=DMDetail)
 async def update_district_manager(
-    dm_id: uuid.UUID,
+    dm_id: str,
     payload: UpdateDMRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
     admin_user: AdminUser = Depends(require_mfa)
 ):
     """Update District Manager details (name, email, status)."""
+    resolved_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
+    if not resolved_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"District Manager with ID '{dm_id}' not found"
+        )
     detail = await DMService.update_dm(
         db=db,
         admin_user=admin_user,
-        dm_id=dm_id,
+        dm_id=resolved_uuid,
         payload=payload,
         ip_address=request.client.host if request.client else None
     )
@@ -91,16 +106,22 @@ async def update_district_manager(
 
 @router.post("/{dm_id}/deactivate")
 async def deactivate_district_manager(
-    dm_id: uuid.UUID,
+    dm_id: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
     admin_user: AdminUser = Depends(require_mfa)
 ):
     """Deactivate (soft delete) a District Manager account."""
+    resolved_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
+    if not resolved_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"District Manager with ID '{dm_id}' not found"
+        )
     success = await DMService.deactivate_dm(
         db=db,
         admin_user=admin_user,
-        dm_id=dm_id,
+        dm_id=resolved_uuid,
         ip_address=request.client.host if request.client else None
     )
     if not success:
@@ -112,16 +133,22 @@ async def deactivate_district_manager(
 
 @router.post("/{dm_id}/reset-password", response_model=ResetPasswordResponse)
 async def reset_district_manager_password(
-    dm_id: uuid.UUID,
+    dm_id: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
     admin_user: AdminUser = Depends(require_mfa)
 ):
     """Reset password for a District Manager (generates fresh temporary password)."""
+    resolved_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
+    if not resolved_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"District Manager with ID '{dm_id}' not found"
+        )
     res = await DMService.reset_dm_password(
         db=db,
         admin_user=admin_user,
-        dm_id=dm_id,
+        dm_id=resolved_uuid,
         ip_address=request.client.host if request.client else None
     )
     if not res:

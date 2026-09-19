@@ -43,12 +43,12 @@ class DMDetail(BaseModel):
 class CreateDMRequest(BaseModel):
     dmid: Optional[str] = Field(None, description="Optional DMID (auto-generated if omitted)")
     name: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
+    email: str = Field(..., min_length=3, description="Email address")
     district_ids: List[int] = Field(default=[], description="Initial district assignments")
 
 class UpdateDMRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     status: Optional[UserStatus] = None
     district_ids: Optional[List[int]] = None
 
