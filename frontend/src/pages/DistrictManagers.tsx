@@ -225,7 +225,7 @@ export function DistrictManagers() {
         payload.district_ids = formDistrictIds;
       }
 
-      await api.patch(`/api/district-managers/${selectedDmForEdit.id}`, payload);
+      await api.put(`/api/district-managers/${selectedDmForEdit.id}`, payload);
       setIsEditModalOpen(false);
       fetchDmList();
     } catch (err: any) {
