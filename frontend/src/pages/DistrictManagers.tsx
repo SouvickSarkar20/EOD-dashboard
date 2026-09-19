@@ -494,48 +494,52 @@ export function DistrictManagers() {
                     </td>
 
                     {/* Actions */}
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex items-center justify-center space-x-2">
+                    <td className="py-4 px-4">
+                      <div className="flex flex-wrap items-center justify-center gap-1.5">
                         
-                        {/* View Detail Drawer */}
+                        {/* View Stations */}
                         <button
                           type="button"
                           onClick={() => openDmDrawer(dm.id)}
-                          className="p-1.5 text-slate-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                          className="flex items-center space-x-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-lg text-xs font-semibold border border-blue-200 transition cursor-pointer"
                           title="View Station Assignments"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View Stations</span>
                         </button>
 
                         {/* Reset Password */}
                         <button
                           type="button"
                           onClick={() => handleResetPassword(dm)}
-                          className="p-1.5 text-slate-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition cursor-pointer"
-                          title="Reset Password"
+                          className="flex items-center space-x-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold border border-amber-200 transition cursor-pointer"
+                          title="Generate new temporary password"
                         >
-                          <Key className="w-4 h-4" />
+                          <Key className="w-3.5 h-3.5" />
+                          <span>Reset Password</span>
                         </button>
 
-                        {/* Edit */}
+                        {/* Edit Profile */}
                         <button
                           type="button"
                           onClick={() => openEditModal(dm)}
-                          className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer"
-                          title="Edit Details"
+                          className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold border border-slate-300 transition cursor-pointer"
+                          title="Edit Name, Email, or Status"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
                         </button>
 
-                        {/* Deactivate */}
+                        {/* Deactivate Account */}
                         {dm.status === 'active' && (
                           <button
                             type="button"
                             onClick={() => handleDeactivateDm(dm)}
-                            className="p-1.5 text-slate-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                            title="Deactivate Account"
+                            className="flex items-center space-x-1 px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-800 rounded-lg text-xs font-semibold border border-red-200 transition cursor-pointer"
+                            title="Deactivate District Manager Account"
                           >
-                            <UserX className="w-4 h-4" />
+                            <UserX className="w-3.5 h-3.5" />
+                            <span>Deactivate</span>
                           </button>
                         )}
 

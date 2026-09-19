@@ -217,19 +217,28 @@ class DMService:
             return None
 
         diffs = {}
-        if payload.name and payload.name != dm.name:
-            diffs["name"] = {"before": dm.name, "after": payload.name}
-            dm.name = payload.name.strip()
-        if payload.email and payload.email.strip().lower() != dm.email:
+        if payload.name is not None:
+            new_name = payload.name.strip()
+            if new_name and new_name != dm.name:
+                diffs["name"] = {"before": dm.name, "after": new_name}
+                dm.name = new_name
+
+        if payload.email is not None:
             new_e = payload.email.strip().lower()
-            existing_email = (await db.execute(select(AdminUser).where(AdminUser.email == new_e))).scalar_one_or_none()
-            if existing_email:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Email '{new_e}' is already used by another user")
-            diffs["email"] = {"before": dm.email, "after": new_e}
-            dm.email = new_e
-        if payload.status and payload.status != dm.status:
-            diffs["status"] = {"before": dm.status.value, "after": payload.status.value}
-            dm.status = payload.status
+            if new_e != dm.email.lower():
+                existing_email = (await db.execute(select(AdminUser).where(AdminUser.email == new_e))).scalar_one_or_none()
+                if existing_email and existing_email.id != dm.id:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Email '{new_e}' is already used by another user")
+                diffs["email"] = {"before": dm.email, "after": new_e}
+                dm.email = new_e
+
+        if payload.status is not None:
+            target_status = UserStatus(payload.status) if isinstance(payload.status, str) else payload.status
+            if target_status != dm.status:
+                before_val = dm.status.value if hasattr(dm.status, 'value') else str(dm.status)
+                after_val = target_status.value if hasattr(target_status, 'value') else str(target_status)
+                diffs["status"] = {"before": before_val, "after": after_val}
+                dm.status = target_status
 
         if diffs:
             log = AuditLog(
