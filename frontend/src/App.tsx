@@ -8,6 +8,8 @@ import { SetupSupabaseMFA } from './pages/SetupSupabaseMFA';
 import { ChangePassword } from './pages/ChangePassword';
 import { Overview } from './pages/Overview';
 import { DistrictManagers } from './pages/DistrictManagers';
+import { MonthlyAnalysis } from './pages/MonthlyAnalysis';
+import { DailyAnalysis } from './pages/DailyAnalysis';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
 
@@ -133,8 +135,8 @@ export function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="monthly" element={<MonthlyPlaceholder />} />
-          <Route path="daily" element={<DailyPlaceholder />} />
+          <Route path="monthly" element={<MonthlyAnalysis />} />
+          <Route path="daily" element={<DailyAnalysis />} />
           <Route path="anomalies" element={<AnomaliesPlaceholder />} />
           <Route path="reports" element={<ReportsPlaceholder />} />
           <Route path="settings" element={<SettingsPlaceholder />} />

@@ -23,10 +23,6 @@ async def get_admin_token() -> str:
             
         return token
 
-from sqlalchemy import delete
-from app.database import AsyncSessionLocal
-from app.models import AdminUser, AuditLog
-
 @pytest.mark.asyncio
 async def test_list_district_managers():
     token = await get_admin_token()
@@ -43,72 +39,50 @@ async def test_create_and_get_dm():
     token = await get_admin_token()
     headers = {"Authorization": f"Bearer {token}"}
     unique_email = f"testdm_{uuid.uuid4().hex[:6]}@eod.internal"
-    dm_id = None
     
-    try:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # 1. Create DM
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-            res = await ac.post("/api/district-managers/", headers=headers, json={
-                "name": "Test DM User",
-                "email": unique_email
-            })
-            assert res.status_code == 201
-            created = res.json()
-            assert created["name"] == "Test DM User"
-            dm_id = created["id"]
+        res = await ac.post("/api/district-managers/", headers=headers, json={
+            "name": "Test DM User",
+            "email": unique_email
+        })
+        assert res.status_code == 201
+        created = res.json()
+        assert created["name"] == "Test DM User"
+        dm_id = created["id"]
 
         # 2. Get DM detail
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-            res = await ac.get(f"/api/district-managers/{dm_id}", headers=headers)
-            assert res.status_code == 200
-            assert res.json()["email"] == unique_email
-
-    finally:
-        if dm_id:
-            async with AsyncSessionLocal() as db:
-                await db.execute(delete(AuditLog).where(AuditLog.resource_id == str(dm_id)))
-                await db.execute(delete(AdminUser).where(AdminUser.id == uuid.UUID(dm_id)))
-                await db.commit()
+        res = await ac.get(f"/api/district-managers/{dm_id}", headers=headers)
+        assert res.status_code == 200
+        assert res.json()["email"] == unique_email
 
 @pytest.mark.asyncio
 async def test_update_and_deactivate_dm():
     token = await get_admin_token()
     headers = {"Authorization": f"Bearer {token}"}
     unique_email = f"updatetarget_{uuid.uuid4().hex[:6]}@eod.internal"
-    dm_id = None
     
-    try:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # 1. Create DM
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-            res = await ac.post("/api/district-managers/", headers=headers, json={
-                "name": "Update Target DM",
-                "email": unique_email
-            })
-            assert res.status_code == 201
-            dm_id = res.json()["id"]
+        res = await ac.post("/api/district-managers/", headers=headers, json={
+            "name": "Update Target DM",
+            "email": unique_email
+        })
+        assert res.status_code == 201
+        dm_id = res.json()["id"]
 
         # 2. Update DM
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-            res = await ac.patch(f"/api/district-managers/{dm_id}", headers=headers, json={
-                "name": "Updated DM Name"
-            })
-            assert res.status_code == 200
-            assert res.json()["name"] == "Updated DM Name"
+        res = await ac.patch(f"/api/district-managers/{dm_id}", headers=headers, json={
+            "name": "Updated DM Name"
+        })
+        assert res.status_code == 200
+        assert res.json()["name"] == "Updated DM Name"
 
         # 3. Reset password
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-            res = await ac.post(f"/api/district-managers/{dm_id}/reset-password", headers=headers)
-            assert res.status_code == 200
-            assert "temporary_password" in res.json()
+        res = await ac.post(f"/api/district-managers/{dm_id}/reset-password", headers=headers)
+        assert res.status_code == 200
+        assert "temporary_password" in res.json()
 
         # 4. Deactivate DM
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-            res = await ac.post(f"/api/district-managers/{dm_id}/deactivate", headers=headers)
-            assert res.status_code == 200
-
-    finally:
-        if dm_id:
-            async with AsyncSessionLocal() as db:
-                await db.execute(delete(AuditLog).where(AuditLog.resource_id == str(dm_id)))
-                await db.execute(delete(AdminUser).where(AdminUser.id == uuid.UUID(dm_id)))
-                await db.commit()
+        res = await ac.post(f"/api/district-managers/{dm_id}/deactivate", headers=headers)
+        assert res.status_code == 200

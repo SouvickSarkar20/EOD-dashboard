@@ -18,7 +18,7 @@ async def get_daily_records(
     start_date: Optional[date] = Query(None, description="Start date filter YYYY-MM-DD"),
     end_date: Optional[date] = Query(None, description="End date filter YYYY-MM-DD"),
     month: Optional[int] = Query(None, description="Enrollment month YYYYMM"),
-    dm_id: Optional[uuid.UUID] = Query(None, description="Filter by DM User UUID"),
+    dm_id: Optional[str] = Query(None, description="Filter by DM User UUID or DMID string"),
     district_id: Optional[int] = Query(None, description="Filter by District ID"),
     station_id: Optional[str] = Query(None, description="Filter by Station ID"),
     operator_code: Optional[str] = Query(None, description="Filter by Operator Code"),
@@ -28,12 +28,13 @@ async def get_daily_records(
     _: AdminUser = Depends(require_mfa)
 ):
     """Fetch paginated Daily records with filters."""
+    resolved_dm_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
     items, total = await AnalyticsService.get_daily_records(
         db=db,
         start_date=start_date,
         end_date=end_date,
         month=month,
-        dm_id=dm_id,
+        dm_id=resolved_dm_uuid,
         district_id=district_id,
         station_id=station_id,
         operator_code=operator_code,
@@ -47,18 +48,19 @@ async def get_daily_summary_overview(
     start_date: Optional[date] = Query(None, description="Start date filter YYYY-MM-DD"),
     end_date: Optional[date] = Query(None, description="End date filter YYYY-MM-DD"),
     month: Optional[int] = Query(None, description="Enrollment month YYYYMM"),
-    dm_id: Optional[uuid.UUID] = Query(None, description="Filter by DM User UUID"),
+    dm_id: Optional[str] = Query(None, description="Filter by DM User UUID or DMID string"),
     district_id: Optional[int] = Query(None, description="Filter by District ID"),
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(require_mfa)
 ):
     """Fetch Daily Analytics Overview: Daily trend line, Top performing stations, Category mix."""
+    resolved_dm_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
     return await AnalyticsService.get_daily_summary_overview(
         db=db,
         start_date=start_date,
         end_date=end_date,
         month=month,
-        dm_id=dm_id,
+        dm_id=resolved_dm_uuid,
         district_id=district_id
     )
 
