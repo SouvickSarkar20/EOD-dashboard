@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { QrCode, ShieldCheck, ArrowRight, AlertCircle, CheckCircle2, Copy, Smartphone } from 'lucide-react';
+import { QrCode, ShieldCheck, ArrowRight, AlertCircle, CheckCircle2, Copy, Smartphone, UserCheck } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
 export function SetupSupabaseMFA() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
 
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
@@ -18,6 +19,44 @@ export function SetupSupabaseMFA() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // If Admin is still using demo credentials, require them to update credentials first
+  if (user?.role === 'admin' && user?.is_demo_creds) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+          <div className="bg-slate-900 text-white p-8 text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-amber-600 text-white shadow-lg mb-1">
+              <UserCheck className="w-8 h-8" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">Set Official Credentials First</h1>
+            <p className="text-slate-300 text-xs">
+              Before setting up Two-Factor Authentication, please update your account email and password from the default demo credentials.
+            </p>
+          </div>
+
+          <div className="p-8 space-y-4">
+            <button
+              type="button"
+              onClick={() => navigate('/update-credentials')}
+              className="w-full bg-blue-900 hover:bg-blue-950 text-white font-semibold py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-sm"
+            >
+              <span>Set Official Custom Credentials</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800 transition py-2"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleEnroll = async () => {
     setLoading(true);
     setError(null);
@@ -28,7 +67,6 @@ export function SetupSupabaseMFA() {
       const secretKey = data.secret;
       const uri = data.uri || `otpauth://totp/EOD%20Admin%20Dashboard?secret=${secretKey}&issuer=EOD%20Admin%20Dashboard`;
       
-      // Use qr_code if provided or generate crisp QR via qrserver API
       const qrImage = data.qr_code && data.qr_code.startsWith('http') 
         ? data.qr_code 
         : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uri)}`;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserCheck, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Shield } from 'lucide-react';
+import { UserCheck, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
@@ -56,10 +56,19 @@ export function UpdateCredentials() {
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 relative">
         
         {/* Header */}
-        <div className="bg-slate-900 text-white p-8 text-center space-y-3">
+        <div className="bg-slate-900 text-white p-8 text-center space-y-3 relative">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            title="Skip and go to dashboard"
+            className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-blue-700 text-white shadow-lg mb-1">
             <UserCheck className="w-8 h-8" />
           </div>
@@ -182,6 +191,17 @@ export function UpdateCredentials() {
                   )}
                 </button>
               </form>
+
+              {/* Skip Option */}
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition py-1"
+                >
+                  Skip for Now & Continue to Dashboard with Demo Credentials
+                </button>
+              </div>
             </>
           )}
 
