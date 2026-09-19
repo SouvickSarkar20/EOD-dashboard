@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, Mail, ArrowRight, AlertCircle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Shield, Lock, Mail, ArrowRight, AlertCircle, Eye, EyeOff, CheckCircle2, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
@@ -30,14 +30,11 @@ export function Login() {
       const data = response.data;
 
       if (data.mfa_required) {
-        // Admin needs Supabase 2FA verification
         setTempToken(data.access_token);
         navigate('/verify-2fa');
       } else {
-        // Direct login success
         setAuth(data.user, data.access_token);
         
-        // Sequence: If Admin is using demo creds, prompt credential update first
         if (data.user.role === 'admin' && (data.user.is_demo_creds || data.is_demo_creds)) {
           navigate('/update-credentials');
         } else if (data.user.must_change_password) {
@@ -60,11 +57,17 @@ export function Login() {
     setError(null);
   };
 
+  const handleClearForm = () => {
+    setEmail('');
+    setPassword('');
+    setError(null);
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         
-        {/* Header Header Strip */}
+        {/* Header Strip */}
         <div className="bg-slate-900 text-white p-8 text-center space-y-3 relative">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-blue-700 text-white shadow-lg mb-1">
             <Shield className="w-8 h-8" />
@@ -78,19 +81,31 @@ export function Login() {
         {/* Form Body */}
         <div className="p-8 space-y-6">
           
-          {/* Demo Pre-fill Card for Easy Testing */}
+          {/* Demo Pre-fill Card */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
             <div className="flex items-center space-x-2 text-xs text-slate-600">
               <CheckCircle2 className="w-4 h-4 text-slate-700 flex-shrink-0" />
               <span>Demo Admin Login Ready</span>
             </div>
-            <button
-              type="button"
-              onClick={handleFillDemoCreds}
-              className="text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition"
-            >
-              Use Demo Login
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={handleFillDemoCreds}
+                className="text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition"
+              >
+                Use Demo Login
+              </button>
+              {(email || password) && (
+                <button
+                  type="button"
+                  onClick={handleClearForm}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 px-2 py-1.5 rounded-lg transition"
+                  title="Clear inputs"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Error Callout */}
@@ -108,9 +123,20 @@ export function Login() {
             
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-800">
-                Email Address
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-semibold text-slate-800">
+                  Email Address
+                </label>
+                {email && (
+                  <button
+                    type="button"
+                    onClick={() => setEmail('')}
+                    className="text-[11px] text-slate-400 hover:text-slate-600"
+                  >
+                    Clear email
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <Mail className="w-5 h-5" />
@@ -120,6 +146,7 @@ export function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@organization.com"
+                  autoComplete="username"
                   required
                   className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm transition"
                 />
@@ -128,9 +155,20 @@ export function Login() {
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-slate-800">
-                Password
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-semibold text-slate-800">
+                  Password
+                </label>
+                {password && (
+                  <button
+                    type="button"
+                    onClick={() => setPassword('')}
+                    className="text-[11px] text-slate-400 hover:text-slate-600"
+                  >
+                    Clear password
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <Lock className="w-5 h-5" />
@@ -138,8 +176,9 @@ export function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setShowPassword(!showPassword)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                   required
                   className="w-full pl-11 pr-11 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm transition"
                 />
@@ -170,9 +209,11 @@ export function Login() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-slate-500 pt-2">
-            Secure Enterprise EOD Portal &bull; Standard Credentials & 2FA Protected
-          </p>
+          <div className="text-center space-y-1 pt-1">
+            <p className="text-xs text-slate-500">
+              Note: If you updated your email & password, sign in with your updated credentials.
+            </p>
+          </div>
 
         </div>
       </div>
