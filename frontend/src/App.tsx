@@ -7,63 +7,87 @@ import { UpdateCredentials } from './pages/UpdateCredentials';
 import { SetupSupabaseMFA } from './pages/SetupSupabaseMFA';
 import { ChangePassword } from './pages/ChangePassword';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { DashboardLayout } from './components/DashboardLayout';
 
 function RootRedirect() {
   const token = useAuthStore((s) => s.token);
   return token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 }
 
-function DashboardPlaceholder() {
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-
+// Temporary page placeholders until Phase 11-14 pages are built
+function OverviewPlaceholder() {
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-2xl p-8 border border-slate-200 shadow-xl text-center space-y-4">
-        <div className="inline-flex p-3 rounded-xl bg-blue-50 text-blue-900 border border-blue-200">
-          <span className="font-bold text-sm">EOD Operations Dashboard</span>
-        </div>
-        <h1 className="text-xl font-bold text-slate-900">Welcome, {user?.name}!</h1>
-        <p className="text-xs text-slate-600">
-          Role: <span className="font-semibold capitalize">{user?.role}</span> | Email: {user?.email}
-        </p>
+    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <h2 className="text-xl font-bold text-slate-900">Executive Overview</h2>
+      <p className="text-xs text-slate-600">
+        Phase 11 Overview Dashboard will display KPI Cards, District Performance Charts, MoM Line Charts, and DM Rankings.
+      </p>
+    </div>
+  );
+}
 
-        {user?.is_2fa_enabled ? (
-          <div className="p-2 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold">
-            Supabase 2FA Protection Active
-          </div>
-        ) : (
-          <div className="p-2 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs">
-            2FA Security Not Enabled
-          </div>
-        )}
+function DmsPlaceholder() {
+  return (
+    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <h2 className="text-xl font-bold text-slate-900">District Managers Directory</h2>
+      <p className="text-xs text-slate-600">
+        Phase 12 DM Management page with Add DM, Edit Credentials, Reset Password, and DM Detail Drawer.
+      </p>
+    </div>
+  );
+}
 
-        <div className="pt-4 space-y-2">
-          {user?.role === 'admin' && (
-            <>
-              <a
-                href="/update-credentials"
-                className="block w-full py-2.5 bg-slate-100 text-slate-800 font-medium rounded-xl text-xs hover:bg-slate-200 transition"
-              >
-                Update Admin Credentials
-              </a>
-              <a
-                href="/setup-2fa"
-                className="block w-full py-2.5 bg-blue-900 text-white font-medium rounded-xl text-xs hover:bg-blue-950 transition"
-              >
-                Configure Supabase 2FA
-              </a>
-            </>
-          )}
-          <button
-            type="button"
-            onClick={logout}
-            className="w-full py-2.5 bg-slate-100 text-slate-700 font-medium rounded-xl text-xs hover:bg-slate-200 transition"
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
+function MonthlyPlaceholder() {
+  return (
+    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <h2 className="text-xl font-bold text-slate-900">Monthly Analytics Table</h2>
+      <p className="text-xs text-slate-600">
+        Phase 13 Paginated Monthly records with fee tier breakdowns and revenue statistics.
+      </p>
+    </div>
+  );
+}
+
+function DailyPlaceholder() {
+  return (
+    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <h2 className="text-xl font-bold text-slate-900">Daily Operational Logs</h2>
+      <p className="text-xs text-slate-600">
+        Phase 13 Day-by-day logs with date range picker and operator breakdown drawer.
+      </p>
+    </div>
+  );
+}
+
+function AnomaliesPlaceholder() {
+  return (
+    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <h2 className="text-xl font-bold text-slate-900">Anomaly Warning Center</h2>
+      <p className="text-xs text-slate-600">
+        Phase 14 Operational red flags (DM decline &ge; 20%, silent stations &ge; 7 days, low performers).
+      </p>
+    </div>
+  );
+}
+
+function ReportsPlaceholder() {
+  return (
+    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <h2 className="text-xl font-bold text-slate-900">Reports & Excel/CSV Exports</h2>
+      <p className="text-xs text-slate-600">
+        Phase 14 One-click download center for monthly, daily, and anomaly reports in .xlsx and .csv formats.
+      </p>
+    </div>
+  );
+}
+
+function SettingsPlaceholder() {
+  return (
+    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <h2 className="text-xl font-bold text-slate-900">Settings & Security</h2>
+      <p className="text-xs text-slate-600">
+        Phase 15 Credentials management and Supabase 2FA TOTP configuration.
+      </p>
     </div>
   );
 }
@@ -99,14 +123,32 @@ export function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Dashboard Shell with Layout */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <DashboardPlaceholder />
+              <DashboardLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<OverviewPlaceholder />} />
+          <Route
+            path="dms"
+            element={
+              <ProtectedRoute requireAdmin>
+                <DmsPlaceholder />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="monthly" element={<MonthlyPlaceholder />} />
+          <Route path="daily" element={<DailyPlaceholder />} />
+          <Route path="anomalies" element={<AnomaliesPlaceholder />} />
+          <Route path="reports" element={<ReportsPlaceholder />} />
+          <Route path="settings" element={<SettingsPlaceholder />} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
