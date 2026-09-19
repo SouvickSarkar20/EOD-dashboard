@@ -7,6 +7,7 @@ import { UpdateCredentials } from './pages/UpdateCredentials';
 import { SetupSupabaseMFA } from './pages/SetupSupabaseMFA';
 import { ChangePassword } from './pages/ChangePassword';
 import { Overview } from './pages/Overview';
+import { DistrictManagers } from './pages/DistrictManagers';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
 
@@ -128,7 +129,7 @@ export function App() {
             path="dms"
             element={
               <ProtectedRoute requireAdmin>
-                <DmsPlaceholder />
+                <DistrictManagers />
               </ProtectedRoute>
             }
           />
