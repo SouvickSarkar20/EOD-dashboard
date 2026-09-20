@@ -52,38 +52,9 @@ function DailyPlaceholder() {
   );
 }
 
-function AnomaliesPlaceholder() {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-      <h2 className="text-xl font-bold text-slate-900">Anomaly Warning Center</h2>
-      <p className="text-xs text-slate-600">
-        Phase 14 Operational red flags (DM decline &ge; 20%, silent stations &ge; 7 days, low performers).
-      </p>
-    </div>
-  );
-}
-
-function ReportsPlaceholder() {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-      <h2 className="text-xl font-bold text-slate-900">Reports & Excel/CSV Exports</h2>
-      <p className="text-xs text-slate-600">
-        Phase 14 One-click download center for monthly, daily, and anomaly reports in .xlsx and .csv formats.
-      </p>
-    </div>
-  );
-}
-
-function SettingsPlaceholder() {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-      <h2 className="text-xl font-bold text-slate-900">Settings & Security</h2>
-      <p className="text-xs text-slate-600">
-        Phase 15 Credentials management and Supabase 2FA TOTP configuration.
-      </p>
-    </div>
-  );
-}
+import { AnomaliesCenter } from './pages/AnomaliesCenter';
+import { Reports } from './pages/Reports';
+import { Settings } from './pages/Settings';
 
 export function App() {
   return (
@@ -137,9 +108,9 @@ export function App() {
           />
           <Route path="monthly" element={<MonthlyAnalysis />} />
           <Route path="daily" element={<DailyAnalysis />} />
-          <Route path="anomalies" element={<AnomaliesPlaceholder />} />
-          <Route path="reports" element={<ReportsPlaceholder />} />
-          <Route path="settings" element={<SettingsPlaceholder />} />
+          <Route path="anomalies" element={<AnomaliesCenter />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
