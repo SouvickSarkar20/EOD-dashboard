@@ -11,7 +11,7 @@ from app.models import (
 )
 from app.schemas.monthly import (
     MonthlyRow, KPICardData, DistrictComparisonData, DMComparisonData,
-    CategoryMixData, TrendPointData, MonthlySummaryResponse
+    CategoryMixItem, TrendPointData, MonthlySummaryResponse
 )
 from app.schemas.daily import (
     DailyRow, DailyTrendPoint, TopStationData, DailySummaryResponse, DailyBreakdownResponse
@@ -214,13 +214,17 @@ class AnalyticsService:
             if prior_enroll > 0:
                 enroll_change_pct = round(((tot_enroll - prior_enroll) / prior_enroll * 100), 2)
 
+        # Total stations in the system (for KPI total coverage)
+        tot_stations_stmt = select(func.count(distinct(Station.station_id)))
+        total_stations = (await db.execute(tot_stations_stmt)).scalar() or 0
+
         kpis = KPICardData(
             total_enrollment=tot_enroll,
-            total_revenue=tot_rev,
-            active_stations_count=active_stations,
-            active_operators_count=active_ops,
-            bmu_share_pct=bmu_share_pct,
-            enrollment_change_pct=enroll_change_pct
+            total_amount=tot_rev,
+            total_stations=total_stations,
+            active_stations=active_stations,
+            total_operators=active_ops,
+            mom_growth_pct=enroll_change_pct
         )
 
         # 2. District Comparison
@@ -268,7 +272,8 @@ class AnalyticsService:
                 AdminUser.name,
                 func.count(distinct(StationAssignment.station_id)).label("assigned_st"),
                 func.coalesce(func.sum(MonthlySummary.total_enrollment), 0).label("enrolls"),
-                func.coalesce(func.sum(MonthlySummary.total_amount), 0).label("rev")
+                func.coalesce(func.sum(MonthlySummary.total_amount), 0).label("rev"),
+                func.max(District.district_name).label("dist_name")
             )
             .select_from(MonthlySummary)
             .join(
@@ -279,6 +284,7 @@ class AnalyticsService:
                 )
             )
             .join(AdminUser, StationAssignment.dm_user_id == AdminUser.id)
+            .join(District, StationAssignment.district_id == District.district_id, isouter=True)
             .where(AdminUser.role == UserRole.DISTRICT_MANAGER)
         )
         if month:
@@ -293,12 +299,13 @@ class AnalyticsService:
 
         dm_comp = [
             DMComparisonData(
-                dm_id=str(r[0]),
+                dm_user_id=str(r[0]),
                 dmid=r[1],
                 dm_name=r[2],
-                assigned_stations_count=r[3],
+                station_count=r[3],
                 total_enrollment=r[4],
-                total_revenue=r[5]
+                total_amount=r[5],
+                district_name=r[6]
             ) for r in dm_rows
         ]
 
@@ -328,16 +335,12 @@ class AnalyticsService:
         new_tot = mix_res[3] if mix_res else 0
         grand_cat = bmu + dmu + mbu + new_tot
 
-        cat_mix = CategoryMixData(
-            bmu_total=bmu,
-            dmu_total=dmu,
-            mbu_total=mbu,
-            new_total=new_tot,
-            bmu_pct=round(bmu / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-            dmu_pct=round(dmu / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-            mbu_pct=round(mbu / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-            new_pct=round(new_tot / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-        )
+        cat_mix = [
+            CategoryMixItem(category="BMU", count=bmu),
+            CategoryMixItem(category="DMU", count=dmu),
+            CategoryMixItem(category="MBU", count=mbu),
+            CategoryMixItem(category="New", count=new_tot),
+        ]
 
         # 5. Month-over-Month Trend
         trend_stmt = (
@@ -367,8 +370,8 @@ class AnalyticsService:
             month_label = f"{datetime(y, m, 1).strftime('%b %Y')}"
             trend_points.append(
                 TrendPointData(
-                    enroll_month=m_val,
-                    label=month_label,
+                    month=m_val,
+                    month_name=month_label,
                     total_enrollment=r[1],
                     total_revenue=r[2]
                 )
@@ -379,7 +382,7 @@ class AnalyticsService:
             district_comparison=district_comp,
             dm_comparison=dm_comp,
             category_mix=cat_mix,
-            monthly_trend=trend_points
+            trend=trend_points
         )
 
     @staticmethod
@@ -617,16 +620,12 @@ class AnalyticsService:
         new_tot = mix_res[3] if mix_res else 0
         grand_cat = bmu + dmu + mbu + new_tot
 
-        cat_mix = CategoryMixData(
-            bmu_total=bmu,
-            dmu_total=dmu,
-            mbu_total=mbu,
-            new_total=new_tot,
-            bmu_pct=round(bmu / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-            dmu_pct=round(dmu / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-            mbu_pct=round(mbu / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-            new_pct=round(new_tot / grand_cat * 100, 2) if grand_cat > 0 else 0.0,
-        )
+        cat_mix = [
+            CategoryMixItem(category="BMU", count=bmu),
+            CategoryMixItem(category="DMU", count=dmu),
+            CategoryMixItem(category="MBU", count=mbu),
+            CategoryMixItem(category="New", count=new_tot),
+        ]
 
         return DailySummaryResponse(
             total_enrollment=tot_enroll,

@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-from app.schemas.monthly import CategoryMixData
+from app.schemas.monthly import CategoryMixItem
 
 class DailyRow(BaseModel):
     record_id: int
@@ -48,7 +48,7 @@ class DailySummaryResponse(BaseModel):
     active_days_count: int
     daily_trend: List[DailyTrendPoint]
     top_stations: List[TopStationData]
-    category_mix: CategoryMixData
+    category_mix: List[CategoryMixItem]
 
 class DailyBreakdownResponse(BaseModel):
     enroll_month: int
