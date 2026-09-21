@@ -28,11 +28,11 @@ class MonthlyRow(BaseModel):
 
 class KPICardData(BaseModel):
     total_enrollment: int
-    total_revenue: Decimal
-    active_stations_count: int
-    active_operators_count: int
-    bmu_share_pct: float
-    enrollment_change_pct: float
+    total_amount: Decimal
+    total_stations: int
+    active_stations: int
+    total_operators: int
+    mom_growth_pct: float
 
 class DistrictComparisonData(BaseModel):
     district_id: int
@@ -41,26 +41,21 @@ class DistrictComparisonData(BaseModel):
     total_revenue: Decimal
 
 class DMComparisonData(BaseModel):
-    dm_id: str
+    dm_user_id: str
     dmid: str
     dm_name: str
-    assigned_stations_count: int
+    district_name: Optional[str] = None
+    station_count: int
     total_enrollment: int
-    total_revenue: Decimal
+    total_amount: Decimal
 
-class CategoryMixData(BaseModel):
-    bmu_total: int
-    dmu_total: int
-    mbu_total: int
-    new_total: int
-    bmu_pct: float
-    dmu_pct: float
-    mbu_pct: float
-    new_pct: float
+class CategoryMixItem(BaseModel):
+    category: str
+    count: int
 
 class TrendPointData(BaseModel):
-    enroll_month: int
-    label: str
+    month: int
+    month_name: str
     total_enrollment: int
     total_revenue: Decimal
 
@@ -68,5 +63,5 @@ class MonthlySummaryResponse(BaseModel):
     kpis: KPICardData
     district_comparison: List[DistrictComparisonData]
     dm_comparison: List[DMComparisonData]
-    category_mix: CategoryMixData
-    monthly_trend: List[TrendPointData]
+    category_mix: List[CategoryMixItem]
+    trend: List[TrendPointData]
