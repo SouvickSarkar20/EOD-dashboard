@@ -341,7 +341,7 @@ export function Overview() {
                     outerRadius={100}
                     paddingAngle={3}
                     labelLine={true}
-                    label={({ category, count, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
+                    label={(props: any) => `${props.category} ${((props.percent || 0) * 100).toFixed(0)}%`}
                     style={{ fontSize: '11px', fontWeight: 600 }}
                   >
                     <Label 
