@@ -6,6 +6,9 @@ connect_args = {}
 # Enforce SSL for Supabase and production cloud deployments
 if "supabase" in settings.DATABASE_URL.lower() or settings.ENVIRONMENT.lower() in ["production", "prod"]:
     connect_args["ssl"] = "require"
+    # Disable prepared statement cache for pgbouncer-based poolers (Supabase shared/session pooler)
+    # pgbouncer does not retain prepared statements across connections, causing InvalidSQLStatementNameError
+    connect_args["statement_cache_size"] = 0
 
 engine = create_async_engine(
     settings.DATABASE_URL,

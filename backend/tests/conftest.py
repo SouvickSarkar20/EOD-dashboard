@@ -13,7 +13,12 @@ from app.main import app
 @pytest_asyncio.fixture(autouse=True)
 async def override_db():
     """Override get_db dependency with a fresh async engine per test loop."""
-    test_engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
+    # Disable prepared statement cache for pgbouncer-based poolers (Supabase shared/session pooler)
+    _connect_args = {}
+    if "supabase" in settings.DATABASE_URL.lower() or settings.ENVIRONMENT.lower() in ["production", "prod"]:
+        _connect_args["ssl"] = "require"
+        _connect_args["statement_cache_size"] = 0
+    test_engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True, connect_args=_connect_args)
     TestSessionLocal = async_sessionmaker(test_engine, expire_on_commit=False, class_=AsyncSession)
 
     async def _get_test_db():
