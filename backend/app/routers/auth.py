@@ -76,7 +76,7 @@ async def login(
     )
 
     # Record login timestamp & audit log
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = datetime.now(timezone.utc)
     log = AuditLog(
         user_id=user.id,
         action="USER_LOGIN",
