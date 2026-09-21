@@ -13,10 +13,12 @@ async def get_admin_token() -> str:
         token = data["access_token"]
         
         if data.get("mfa_required"):
+            import pyotp
+            totp_code = pyotp.TOTP("JBSWY3DPEHPK3PXP").now()
             verify_res = await ac.post(
                 "/api/auth/admin/supabase-2fa/verify-login",
                 headers={"Authorization": f"Bearer {token}"},
-                json={"totp_code": "123456"}
+                json={"totp_code": totp_code}
             )
             return verify_res.json()["access_token"]
             

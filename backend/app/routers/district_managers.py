@@ -7,7 +7,7 @@ from app.dependencies.db import get_db
 from app.dependencies.auth import require_admin, require_mfa
 from app.models import AdminUser
 from app.schemas.district_manager import (
-    DMListItem, DMDetail, CreateDMRequest, UpdateDMRequest, ResetPasswordResponse
+    DMListItem, DMDetail, CreateDMRequest, UpdateDMRequest, ResetPasswordRequest, ResetPasswordResponse
 )
 from app.utils.pagination import PaginatedResponse, create_paginated_response
 from app.services.dm_service import DMService
@@ -135,20 +135,23 @@ async def deactivate_district_manager(
 async def reset_district_manager_password(
     dm_id: str,
     request: Request,
+    payload: Optional[ResetPasswordRequest] = None,
     db: AsyncSession = Depends(get_db),
     admin_user: AdminUser = Depends(require_mfa)
 ):
-    """Reset password for a District Manager (generates fresh temporary password)."""
+    """Reset password for a District Manager (allows setting custom password or auto-generating temporary password)."""
     resolved_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
     if not resolved_uuid:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"District Manager with ID '{dm_id}' not found"
         )
+    custom_pw = payload.new_password.strip() if payload and payload.new_password and payload.new_password.strip() else None
     res = await DMService.reset_dm_password(
         db=db,
         admin_user=admin_user,
         dm_id=resolved_uuid,
+        custom_password=custom_pw,
         ip_address=request.client.host if request.client else None
     )
     if not res:

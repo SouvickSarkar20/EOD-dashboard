@@ -62,22 +62,30 @@ class DMService:
         res = await db.execute(query)
         dms = res.scalars().all()
 
-        dm_items = []
-        for dm in dms:
-            assignments_query = (
+        dm_ids = [dm.id for dm in dms]
+        asgn_map = {}
+        if dm_ids:
+            batch_query = (
                 select(
+                    StationAssignment.dm_user_id,
                     func.count(distinct(StationAssignment.station_id)),
                     func.array_agg(distinct(District.district_name))
                 )
                 .select_from(StationAssignment)
-                .join(District, StationAssignment.district_id == District.district_id)
-                .where(StationAssignment.dm_user_id == dm.id)
+                .join(District, StationAssignment.district_id == District.district_id, isouter=True)
+                .where(StationAssignment.dm_user_id.in_(dm_ids))
+                .group_by(StationAssignment.dm_user_id)
             )
-            asgn_res = await db.execute(assignments_query)
-            row = asgn_res.first()
-            station_count = row[0] if row and row[0] else 0
-            district_names = [d for d in row[1] if d] if row and row[1] else []
+            asgn_rows = (await db.execute(batch_query)).all()
+            for r in asgn_rows:
+                dm_uid = r[0]
+                st_cnt = r[1] or 0
+                dist_names = [d for d in (r[2] or []) if d]
+                asgn_map[dm_uid] = (st_cnt, dist_names)
 
+        dm_items = []
+        for dm in dms:
+            st_count, dist_names = asgn_map.get(dm.id, (0, []))
             dm_items.append(
                 DMListItem(
                     id=dm.id,
@@ -85,8 +93,8 @@ class DMService:
                     name=dm.name,
                     email=dm.email,
                     status=dm.status,
-                    assigned_stations_count=station_count,
-                    assigned_districts=district_names,
+                    assigned_stations_count=st_count,
+                    assigned_districts=dist_names,
                     last_login_at=dm.last_login_at,
                     created_at=dm.created_at
                 )
@@ -162,11 +170,33 @@ class DMService:
         if existing_email:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"User with email '{email_clean}' already exists")
 
-        # Generate DMID if not supplied
+        # Safely generate next collision-free DMID if not supplied
         if not payload.dmid:
-            count_stmt = select(func.count()).where(AdminUser.role == UserRole.DISTRICT_MANAGER)
-            cnt = (await db.execute(count_stmt)).scalar() or 0
-            payload.dmid = f"ClabDM{cnt + 1:02d}"
+            res = await db.execute(
+                select(AdminUser.dmid).where(
+                    AdminUser.role == UserRole.DISTRICT_MANAGER,
+                    AdminUser.dmid.like("ClabDM%")
+                )
+            )
+            existing_dmids = res.scalars().all()
+            max_idx = 0
+            for d in existing_dmids:
+                try:
+                    num = int(d.replace("ClabDM", "").strip())
+                    if num > max_idx:
+                        max_idx = num
+                except ValueError:
+                    pass
+            
+            next_idx = max_idx + 1
+            candidate = f"ClabDM{next_idx:02d}"
+            while True:
+                chk = (await db.execute(select(AdminUser).where(AdminUser.dmid == candidate))).scalar_one_or_none()
+                if not chk:
+                    break
+                next_idx += 1
+                candidate = f"ClabDM{next_idx:02d}"
+            payload.dmid = candidate
 
         dmid_clean = payload.dmid.strip()
         existing_dmid = (await db.execute(select(AdminUser).where(AdminUser.dmid == dmid_clean))).scalar_one_or_none()
@@ -187,12 +217,20 @@ class DMService:
         db.add(new_dm)
         await db.flush()
 
+        # Apply initial district assignments if provided
+        if payload.district_ids:
+            await db.execute(
+                update(StationAssignment)
+                .where(StationAssignment.district_id.in_(payload.district_ids))
+                .values(dm_user_id=new_dm.id)
+            )
+
         log = AuditLog(
             user_id=admin_user.id,
             action="DM_CREATED",
             resource_type="AdminUser",
             resource_id=str(new_dm.id),
-            details={"dmid": new_dm.dmid, "name": new_dm.name, "email": new_dm.email},
+            details={"dmid": new_dm.dmid, "name": new_dm.name, "email": new_dm.email, "district_ids": payload.district_ids},
             ip_address=ip_address
         )
         db.add(log)
@@ -209,7 +247,7 @@ class DMService:
         payload: UpdateDMRequest,
         ip_address: Optional[str] = None
     ) -> Optional[DMDetail]:
-        """Update District Manager profile fields and status."""
+        """Update District Manager profile fields, status, and district assignments."""
         stmt = select(AdminUser).where(AdminUser.id == dm_id, AdminUser.role == UserRole.DISTRICT_MANAGER)
         res = await db.execute(stmt)
         dm = res.scalar_one_or_none()
@@ -239,6 +277,14 @@ class DMService:
                 after_val = target_status.value if hasattr(target_status, 'value') else str(target_status)
                 diffs["status"] = {"before": before_val, "after": after_val}
                 dm.status = target_status
+
+        if payload.district_ids is not None:
+            diffs["district_ids"] = payload.district_ids
+            await db.execute(
+                update(StationAssignment)
+                .where(StationAssignment.district_id.in_(payload.district_ids))
+                .values(dm_user_id=dm.id)
+            )
 
         if diffs:
             log = AuditLog(
@@ -286,25 +332,27 @@ class DMService:
         db: AsyncSession,
         admin_user: AdminUser,
         dm_id: uuid.UUID,
+        custom_password: Optional[str] = None,
         ip_address: Optional[str] = None
     ) -> Optional[Tuple[AdminUser, str]]:
-        """Reset a District Manager's password and return fresh temp password."""
+        """Reset a District Manager's password and return fresh temp/custom password."""
         stmt = select(AdminUser).where(AdminUser.id == dm_id, AdminUser.role == UserRole.DISTRICT_MANAGER)
         res = await db.execute(stmt)
         dm = res.scalar_one_or_none()
         if not dm:
             return None
 
-        temp_password = generate_temp_password()
+        temp_password = custom_password.strip() if custom_password and custom_password.strip() else generate_temp_password()
         dm.password_hash = get_password_hash(temp_password)
         dm.must_change_password = True
+        dm.is_demo_creds = False
 
         log = AuditLog(
             user_id=admin_user.id,
             action="DM_PASSWORD_RESET",
             resource_type="AdminUser",
             resource_id=str(dm.id),
-            details={"dmid": dm.dmid, "name": dm.name},
+            details={"dmid": dm.dmid, "name": dm.name, "is_custom": bool(custom_password)},
             ip_address=ip_address
         )
         db.add(log)

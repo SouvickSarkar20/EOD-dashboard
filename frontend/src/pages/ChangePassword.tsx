@@ -31,12 +31,14 @@ export function ChangePassword() {
     setError(null);
 
     try {
-      await api.post('/api/auth/change-password', {
-        old_password: oldPassword,
+      const res = await api.post('/api/auth/change-password', {
+        current_password: oldPassword,
         new_password: newPassword,
       });
 
-      if (user) {
+      if (res.data) {
+        updateUser(res.data);
+      } else if (user) {
         updateUser({ must_change_password: false, is_demo_creds: false });
       }
 

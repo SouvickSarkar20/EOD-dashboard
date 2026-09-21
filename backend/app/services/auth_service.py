@@ -6,17 +6,7 @@ from supabase import create_client, Client
 from app.config import settings
 from app.models import AdminUser, UserStatus, UserRole, AuditLog
 from app.utils.security import verify_password, get_password_hash
-
-def get_supabase_client() -> Optional[Client]:
-    """Initialize Supabase client if valid credentials are configured in .env."""
-    if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY:
-        if not settings.SUPABASE_URL.startswith("https://placeholder"):
-            try:
-                return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
-            except Exception as e:
-                print(f"[Supabase Client Init Warning] {e}")
-                return None
-    return None
+from app.utils.supabase import get_supabase_client
 
 class AuthService:
     @staticmethod
@@ -96,15 +86,16 @@ class AuthService:
             except Exception as e:
                 print(f"[Supabase MFA Notice] Native MFA enroll notice: {e}")
 
-        # Local fallback representation for dev/offline testing if Supabase API is offline
-        demo_secret = "JBSWY3DPEHPK3PXP" # Base32 test secret
-        demo_uri = f"otpauth://totp/EOD%20Admin%20Dashboard:{user.email}?secret={demo_secret}&issuer=EOD%20Admin%20Dashboard"
-        demo_qr = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='black'/></svg>"
+        # Dynamic unique fallback secret for offline/local environment
+        import pyotp
+        secret = pyotp.random_base32()
+        uri = pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name="EOD Admin Dashboard")
+        demo_qr = f"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><rect width='120' height='120' fill='%23111827'/><text x='50%' y='50%' fill='%2338bdf8' font-size='10' text-anchor='middle' dominant-baseline='middle'>TOTP Secret Created</text></svg>"
         
         return {
-            "secret": demo_secret,
+            "secret": secret,
             "qr_code": demo_qr,
-            "uri": demo_uri,
+            "uri": uri,
             "factor_id": "supabase_mfa_totp_factor"
         }
 
@@ -117,11 +108,15 @@ class AuthService:
         ip_address: Optional[str] = None
     ) -> bool:
         """
-        Verify 6-digit TOTP code via Supabase Auth MFA Engine.
+        Verify 6-digit TOTP code via Supabase Auth MFA Engine or pyotp TOTP verification.
         On success, enables 2FA for Admin user and logs audit action.
         """
         code = totp_code.strip()
         verified = False
+
+        # Enforce strict 6-digit numeric format validation
+        if not code or len(code) != 6 or not code.isdigit():
+            return False
 
         sb = get_supabase_client()
         if sb and user.supabase_user_id:
@@ -133,9 +128,15 @@ class AuthService:
             except Exception as e:
                 print(f"[Supabase MFA Notice] Verification check: {e}")
 
-        # Fallback check for dev/testing environment
-        if not verified and code in ["123456", "000000"]:
-            verified = True
+        # Check TOTP secret with pyotp if provided
+        if not verified and secret:
+            try:
+                import pyotp
+                totp = pyotp.TOTP(secret)
+                if totp.verify(code, valid_window=1):
+                    verified = True
+            except Exception as e:
+                print(f"[pyotp verification notice] {e}")
 
         if verified:
             user.is_2fa_enabled = True

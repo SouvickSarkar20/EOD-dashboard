@@ -86,7 +86,12 @@ export function DistrictManagers() {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [selectedDmForEdit, setSelectedDmForEdit] = useState<DMListItem | null>(null);
   
-  const [resetModalData, setResetModalData] = useState<ResetPasswordModalData | null>(null);
+  // Reset Password Modal State
+  const [selectedDmForReset, setSelectedDmForReset] = useState<DMListItem | null>(null);
+  const [customResetPassword, setCustomResetPassword] = useState<string>('');
+  const [resetSubmitting, setResetSubmitting] = useState<boolean>(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccessData, setResetSuccessData] = useState<{ dmid: string; dmName: string; password: string } | null>(null);
   const [copiedPassword, setCopiedPassword] = useState<boolean>(false);
   
   const [selectedDmDetail, setSelectedDmDetail] = useState<DMDetail | null>(null);
@@ -235,22 +240,50 @@ export function DistrictManagers() {
     }
   };
 
-  // Reset Password for DM
-  const handleResetPassword = async (dm: DMListItem) => {
-    if (!window.confirm(`Are you sure you want to reset the password for DM ${dm.name} (${dm.dmid})?`)) {
+  const generateRandomTempPw = (length = 12) => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let res = '';
+    for (let i = 0; i < length; i++) {
+      res += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return res;
+  };
+
+  // Open Reset Password Modal for DM
+  const openResetPasswordModal = (dm: DMListItem) => {
+    setSelectedDmForReset(dm);
+    setCustomResetPassword(generateRandomTempPw());
+    setResetError(null);
+    setResetSuccessData(null);
+    setCopiedPassword(false);
+  };
+
+  // Save Custom / Generated Password for DM
+  const handleSaveCustomPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDmForReset) return;
+    if (!customResetPassword || customResetPassword.length < 6) {
+      setResetError('Password must be at least 6 characters long.');
       return;
     }
 
+    setResetSubmitting(true);
+    setResetError(null);
+
     try {
-      const res = await api.post(`/api/district-managers/${dm.id}/reset-password`);
-      setResetModalData({
-        dmid: res.data.dmid,
-        dmName: dm.name,
-        tempPassword: res.data.temporary_password,
+      const res = await api.post(`/api/district-managers/${selectedDmForReset.id}/reset-password`, {
+        new_password: customResetPassword.trim()
       });
-      setCopiedPassword(false);
+
+      setResetSuccessData({
+        dmid: res.data.dmid,
+        dmName: selectedDmForReset.name,
+        password: res.data.temporary_password || customResetPassword.trim()
+      });
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to reset password.');
+      setResetError(err.response?.data?.detail || 'Failed to update DM password. Please try again.');
+    } finally {
+      setResetSubmitting(false);
     }
   };
 
@@ -286,8 +319,8 @@ export function DistrictManagers() {
 
   // Copy password to clipboard
   const handleCopyPassword = () => {
-    if (resetModalData?.tempPassword) {
-      navigator.clipboard.writeText(resetModalData.tempPassword);
+    if (resetSuccessData?.password) {
+      navigator.clipboard.writeText(resetSuccessData.password);
       setCopiedPassword(true);
       setTimeout(() => setCopiedPassword(false), 3000);
     }
@@ -511,9 +544,9 @@ export function DistrictManagers() {
                         {/* Reset Password */}
                         <button
                           type="button"
-                          onClick={() => handleResetPassword(dm)}
+                          onClick={() => openResetPasswordModal(dm)}
                           className="flex items-center space-x-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold border border-amber-200 transition cursor-pointer"
-                          title="Generate new temporary password"
+                          title="Set or generate password for DM account"
                         >
                           <Key className="w-3.5 h-3.5" />
                           <span>Reset Password</span>
@@ -772,55 +805,151 @@ export function DistrictManagers() {
         </div>
       )}
 
-      {/* Reset Password Modal */}
-      {resetModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-5 text-center">
+      {/* Reset & Set Custom Password Modal */}
+      {selectedDmForReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden p-6 space-y-5">
             
-            <div className="w-12 h-12 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto">
-              <Key className="w-6 h-6" />
-            </div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-amber-100 text-amber-800 rounded-xl">
+                  <Key className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">Set Account Password</h3>
+                  <p className="text-xs text-slate-500">
+                    Reset or assign custom password for <strong>{selectedDmForReset.name}</strong> ({selectedDmForReset.dmid})
+                  </p>
+                </div>
+              </div>
 
-            <div>
-              <h3 className="text-lg font-extrabold text-slate-900">Temporary Password Generated</h3>
-              <p className="text-xs text-slate-600 mt-1">
-                Password reset for <strong>{resetModalData.dmName}</strong> ({resetModalData.dmid})
-              </p>
-            </div>
-
-            {/* Generated Password Box */}
-            <div className="bg-slate-100 p-4 rounded-xl border border-slate-300 flex items-center justify-between font-mono text-base font-bold text-slate-900">
-              <span>{resetModalData.tempPassword}</span>
               <button
                 type="button"
-                onClick={handleCopyPassword}
-                className="flex items-center space-x-1 text-xs px-2.5 py-1.5 bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition cursor-pointer"
+                onClick={() => setSelectedDmForReset(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
               >
-                {copiedPassword ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy</span>
-                  </>
-                )}
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200 leading-relaxed text-left">
-              Share this temporary password with the District Manager. They will be prompted to update their password upon logging in.
-            </p>
+            {/* If password has been saved successfully */}
+            {resetSuccessData ? (
+              <div className="space-y-4 text-center py-2">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+                  <Check className="w-6 h-6 text-emerald-700" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-900">Password Saved Successfully!</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    The account password for <strong>{resetSuccessData.dmName}</strong> ({resetSuccessData.dmid}) has been updated.
+                  </p>
+                </div>
 
-            <button
-              type="button"
-              onClick={() => setResetModalData(null)}
-              className="w-full py-2.5 bg-slate-900 text-white font-bold rounded-xl text-xs hover:bg-slate-800 transition cursor-pointer"
-            >
-              Done & Close
-            </button>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-300 flex items-center justify-between font-mono text-sm font-bold text-slate-900">
+                  <span className="select-all">{resetSuccessData.password}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyPassword}
+                    className="flex items-center space-x-1.5 text-xs px-3 py-1.5 bg-blue-900 text-white rounded-lg hover:bg-blue-950 transition cursor-pointer"
+                  >
+                    {copiedPassword ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-xs text-slate-600 bg-amber-50 p-3 rounded-xl border border-amber-200 text-left">
+                  Share this password with the District Manager. They can log in immediately using their email address or DMID.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedDmForReset(null)}
+                  className="w-full py-2.5 bg-slate-900 text-white font-bold rounded-xl text-xs hover:bg-slate-800 transition cursor-pointer"
+                >
+                  Done & Close
+                </button>
+              </div>
+            ) : (
+              /* Editable Form */
+              <form onSubmit={handleSaveCustomPassword} className="space-y-4">
+                
+                {resetError && (
+                  <div className="bg-red-50 border border-red-200 text-red-800 text-xs p-3 rounded-xl flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span>{resetError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                      New Password for DM
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setCustomResetPassword(generateRandomTempPw())}
+                      className="text-xs font-semibold text-blue-900 hover:underline flex items-center space-x-1 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Generate Random</span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    required
+                    minLength={6}
+                    value={customResetPassword}
+                    onChange={(e) => setCustomResetPassword(e.target.value)}
+                    placeholder="Enter custom password..."
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    You can type any custom password or click <strong>Generate Random</strong>.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDmForReset(null)}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={resetSubmitting}
+                    className="flex items-center space-x-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {resetSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving Password...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4" />
+                        <span>Save & Set Password</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+              </form>
+            )}
+
           </div>
         </div>
       )}

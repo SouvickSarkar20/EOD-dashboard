@@ -18,40 +18,6 @@ function RootRedirect() {
   return token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 }
 
-// Temporary placeholders for remaining pages (Phases 12-15)
-function DmsPlaceholder() {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-      <h2 className="text-xl font-bold text-slate-900">District Managers Directory</h2>
-      <p className="text-xs text-slate-600">
-        Phase 12 DM Management page with Add DM, Edit Credentials, Reset Password, and DM Detail Drawer.
-      </p>
-    </div>
-  );
-}
-
-function MonthlyPlaceholder() {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-      <h2 className="text-xl font-bold text-slate-900">Monthly Analytics Table</h2>
-      <p className="text-xs text-slate-600">
-        Phase 13 Paginated Monthly records with fee tier breakdowns and revenue statistics.
-      </p>
-    </div>
-  );
-}
-
-function DailyPlaceholder() {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-      <h2 className="text-xl font-bold text-slate-900">Daily Operational Logs</h2>
-      <p className="text-xs text-slate-600">
-        Phase 13 Day-by-day logs with date range picker and operator breakdown drawer.
-      </p>
-    </div>
-  );
-}
-
 import { AnomaliesCenter } from './pages/AnomaliesCenter';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';

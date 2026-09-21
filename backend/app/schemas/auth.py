@@ -27,12 +27,18 @@ class UserProfileSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class UpdateProfileRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[EmailStr] = Field(None, description="Updated valid email address")
+    dmid: Optional[str] = Field(None, min_length=1, max_length=50)
+
 class UpdateCredentialsRequest(BaseModel):
     new_email: EmailStr
     new_password: str = Field(..., min_length=8, description="New strong password (min 8 characters)")
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
+    current_password: Optional[str] = None
+    old_password: Optional[str] = None
     new_password: str = Field(..., min_length=8, description="New strong password")
 
 class MFAEnrollResponse(BaseModel):

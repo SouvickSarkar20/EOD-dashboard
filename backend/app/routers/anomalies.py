@@ -21,6 +21,8 @@ async def get_anomalies(
     severity: Optional[str] = Query(None, description="Filter by Severity: HIGH | MEDIUM | LOW"),
     threshold_decline_pct: float = Query(20.0, ge=1.0, le=100.0, description="DM decline percentage threshold"),
     silent_days_threshold: int = Query(7, ge=1, le=60, description="Silent station days threshold"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(50, ge=1, le=200, description="Items per page"),
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(require_mfa)
 ):
@@ -38,7 +40,9 @@ async def get_anomalies(
         anomaly_type=anomaly_type,
         severity=severity,
         threshold_decline_pct=threshold_decline_pct,
-        silent_days_threshold=silent_days_threshold
+        silent_days_threshold=silent_days_threshold,
+        page=page,
+        page_size=page_size
     )
 
 @router.get("/summary", response_model=AnomalySummaryResponse)

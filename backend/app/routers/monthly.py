@@ -10,6 +10,8 @@ from app.schemas.monthly import MonthlyRow, MonthlySummaryResponse
 from app.utils.pagination import PaginatedResponse, create_paginated_response
 from app.services.analytics_service import AnalyticsService
 
+from app.utils.security import validate_month_param
+
 router = APIRouter()
 
 @router.get("/", response_model=PaginatedResponse[MonthlyRow])
@@ -27,6 +29,7 @@ async def get_monthly_records(
     _: AdminUser = Depends(require_mfa)
 ):
     """Fetch paginated Monthly summary records with filters."""
+    validate_month_param(month)
     resolved_dm_uuid = await AnalyticsService.resolve_dm_uuid(db, dm_id)
     items, total = await AnalyticsService.get_monthly_records(
         db=db,

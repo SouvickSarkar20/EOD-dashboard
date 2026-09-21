@@ -1,10 +1,14 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import String, Integer, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, validates
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.database import Base
+from app.utils.security import sanitize_audit_details
+
+def utc_now():
+    return datetime.utcnow()
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
@@ -16,4 +20,8 @@ class AuditLog(Base):
     resource_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     details: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+
+    @validates("details")
+    def validate_details(self, key, value):
+        return sanitize_audit_details(value)

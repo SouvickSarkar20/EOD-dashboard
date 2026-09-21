@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '../store/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -28,8 +29,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Don't auto-clear if it's the login attempt itself
       if (!error.config.url.includes('/api/auth/login')) {
-        localStorage.removeItem('eod_access_token');
-        localStorage.removeItem('eod_user_data');
+        useAuthStore.getState().logout();
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }

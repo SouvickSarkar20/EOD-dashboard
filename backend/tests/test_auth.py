@@ -66,9 +66,11 @@ async def test_supabase_2fa_enrollment_and_verification():
         assert "secret" in enroll_data
 
     # 2. Verify Enrollment
+    import pyotp
+    valid_totp = pyotp.TOTP(enroll_data["secret"]).now()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         verify_res = await ac.post("/api/auth/admin/supabase-2fa/verify-enrollment", headers=headers, json={
-            "totp_code": "123456",
+            "totp_code": valid_totp,
             "secret": enroll_data["secret"]
         })
         assert verify_res.status_code == 200

@@ -125,7 +125,7 @@ export function Login() {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-semibold text-slate-800">
-                  Email Address
+                  Email address or DM ID
                 </label>
                 {email && (
                   <button
@@ -133,7 +133,7 @@ export function Login() {
                     onClick={() => setEmail('')}
                     className="text-[11px] text-slate-400 hover:text-slate-600"
                   >
-                    Clear email
+                    Clear
                   </button>
                 )}
               </div>
@@ -142,10 +142,10 @@ export function Login() {
                   <Mail className="w-5 h-5" />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@organization.com"
+                  placeholder="name@organization.com or ClabDM01"
                   autoComplete="username"
                   required
                   className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm transition"

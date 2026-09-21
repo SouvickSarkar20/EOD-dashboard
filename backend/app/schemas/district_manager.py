@@ -43,14 +43,17 @@ class DMDetail(BaseModel):
 class CreateDMRequest(BaseModel):
     dmid: Optional[str] = Field(None, description="Optional DMID (auto-generated if omitted)")
     name: str = Field(..., min_length=2, max_length=100)
-    email: str = Field(..., min_length=3, description="Email address")
+    email: EmailStr = Field(..., description="Valid email address")
     district_ids: List[int] = Field(default=[], description="Initial district assignments")
 
 class UpdateDMRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     status: Optional[UserStatus] = None
     district_ids: Optional[List[int]] = None
+
+class ResetPasswordRequest(BaseModel):
+    new_password: Optional[str] = Field(None, min_length=6, description="Custom password to set for the DM (auto-generated if omitted)")
 
 class ResetPasswordResponse(BaseModel):
     dm_id: uuid.UUID

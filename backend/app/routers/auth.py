@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,7 +8,7 @@ from app.dependencies.auth import get_current_user, require_admin
 from app.models import AdminUser, UserStatus, UserRole, AuditLog
 from app.schemas.auth import (
     LoginRequest, TokenResponse, UserProfileSchema,
-    UpdateCredentialsRequest, ChangePasswordRequest,
+    UpdateCredentialsRequest, ChangePasswordRequest, UpdateProfileRequest,
     MFAEnrollResponse, Verify2FARequest, MFAVerifyResponse
 )
 from app.utils.security import (
@@ -16,21 +16,27 @@ from app.utils.security import (
     create_refresh_token, decode_token
 )
 from app.services.auth_service import AuthService
+from app.config import settings
+from app.dependencies.rate_limit import rate_limit_auth
 
 router = APIRouter()
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(rate_limit_auth(10, 60))])
 async def login(
     payload: LoginRequest,
-    response: Response,
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db)
 ):
-    """Authenticate user with email/DMID and password."""
-    identifier = payload.email.strip()
+    """
+    Authenticate Admin or District Manager.
+    Accepts email or DMID in the 'email' field.
+    """
+    identifier = payload.email.strip().lower()
     
+    # Query user by email OR dmid
     stmt = select(AdminUser).where(
-        (AdminUser.email == identifier) | (AdminUser.dmid == identifier)
+        (AdminUser.email == identifier) | (AdminUser.dmid == payload.email.strip())
     )
     res = await db.execute(stmt)
     user = res.scalar_one_or_none()
@@ -38,13 +44,13 @@ async def login(
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email/DMID or password",
+            detail="Invalid credentials. Please check your username/email and password."
         )
 
     if user.status != UserStatus.ACTIVE:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is deactivated. Please contact administrator.",
+            detail="Your account has been deactivated. Please contact your system administrator."
         )
 
     # Check if 2FA is required for Admin
@@ -60,12 +66,13 @@ async def login(
     refresh_token = create_refresh_token(token_data)
 
     # Set httpOnly refresh cookie
+    secure_cookie = settings.ENVIRONMENT.lower() in ["production", "prod"] or not settings.DEBUG
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=secure_cookie,
     )
 
     # Record login timestamp & audit log
@@ -95,6 +102,47 @@ async def get_me(current_user: AdminUser = Depends(get_current_user)):
     """Return currently authenticated user profile."""
     return UserProfileSchema.model_validate(current_user)
 
+@router.put("/me", response_model=UserProfileSchema)
+async def update_my_profile(
+    payload: UpdateProfileRequest,
+    current_user: AdminUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update current user profile information (Name, Email, DMID)."""
+    if payload.name is not None:
+        new_name = payload.name.strip()
+        if new_name:
+            current_user.name = new_name
+            
+    if payload.email is not None:
+        new_email = payload.email.strip().lower()
+        if new_email and new_email != current_user.email:
+            stmt = select(AdminUser).where(AdminUser.email == new_email, AdminUser.id != current_user.id)
+            res = await db.execute(stmt)
+            if res.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Email address '{new_email}' is already registered to another account."
+                )
+            current_user.email = new_email
+
+    if payload.dmid is not None:
+        new_dmid = payload.dmid.strip()
+        if new_dmid and new_dmid != current_user.dmid:
+            stmt = select(AdminUser).where(AdminUser.dmid == new_dmid, AdminUser.id != current_user.id)
+            res = await db.execute(stmt)
+            if res.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"DM ID '{new_dmid}' is already assigned to another account."
+                )
+            current_user.dmid = new_dmid
+
+    await db.commit()
+    await db.refresh(current_user)
+
+    return UserProfileSchema.model_validate(current_user)
+
 @router.post("/logout")
 async def logout(response: Response):
     """Logout user by clearing refresh cookie."""
@@ -104,6 +152,7 @@ async def logout(response: Response):
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db)
 ):
     """Obtain a new access token using the httpOnly refresh cookie."""
@@ -132,14 +181,31 @@ async def refresh_token(
             detail="User account is invalid or deactivated",
         )
     
-    mfa_required = user.role.value == "admin" and user.is_2fa_enabled
+    # Preserve previous mfa_verified status from the decoded refresh token
+    was_mfa_verified = payload.get("mfa_verified", False)
+    mfa_required = (user.role.value == "admin" and user.is_2fa_enabled and not was_mfa_verified)
+    
+    # If 2FA is not enabled or user already verified MFA in session, mark mfa_verified=True
+    is_mfa_valid = was_mfa_verified if (user.role.value == "admin" and user.is_2fa_enabled) else True
+
     new_token_data = {
         "sub": str(user.id),
         "role": user.role.value,
-        "mfa_verified": not mfa_required,
+        "mfa_verified": is_mfa_valid,
     }
     
     new_access_token = create_access_token(new_token_data)
+    new_refresh_token = create_refresh_token(new_token_data)
+
+    secure_cookie = settings.ENVIRONMENT.lower() in ["production", "prod"] or not settings.DEBUG
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        samesite="lax",
+        secure=secure_cookie,
+    )
+
     return TokenResponse(
         access_token=new_access_token,
         mfa_required=mfa_required,
@@ -181,6 +247,7 @@ async def enroll_supabase_2fa(
 async def verify_supabase_2fa_enrollment(
     payload: Verify2FARequest,
     request: Request,
+    response: Response,
     current_user: AdminUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
@@ -208,6 +275,16 @@ async def verify_supabase_2fa_enrollment(
         "mfa_verified": True
     }
     upgraded_token = create_access_token(token_data)
+    upgraded_refresh = create_refresh_token(token_data)
+
+    secure_cookie = settings.ENVIRONMENT.lower() in ["production", "prod"] or not settings.DEBUG
+    response.set_cookie(
+        key="refresh_token",
+        value=upgraded_refresh,
+        httponly=True,
+        samesite="lax",
+        secure=secure_cookie,
+    )
 
     return MFAVerifyResponse(
         success=True,
@@ -220,6 +297,7 @@ async def verify_supabase_2fa_enrollment(
 async def verify_supabase_2fa_login(
     payload: Verify2FARequest,
     request: Request,
+    response: Response,
     current_user: AdminUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -233,6 +311,7 @@ async def verify_supabase_2fa_login(
         db=db,
         user=current_user,
         totp_code=payload.totp_code,
+        secret=payload.secret,
         ip_address=request.client.host if request.client else None
     )
 
@@ -248,6 +327,16 @@ async def verify_supabase_2fa_login(
         "mfa_verified": True
     }
     upgraded_token = create_access_token(token_data)
+    upgraded_refresh = create_refresh_token(token_data)
+
+    secure_cookie = settings.ENVIRONMENT.lower() in ["production", "prod"] or not settings.DEBUG
+    response.set_cookie(
+        key="refresh_token",
+        value=upgraded_refresh,
+        httponly=True,
+        samesite="lax",
+        secure=secure_cookie,
+    )
 
     return MFAVerifyResponse(
         success=True,
@@ -263,7 +352,8 @@ async def change_password(
     db: AsyncSession = Depends(get_db)
 ):
     """Change current user password."""
-    if not verify_password(payload.current_password, current_user.password_hash):
+    curr_pwd = payload.current_password or payload.old_password
+    if not curr_pwd or not verify_password(curr_pwd, current_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect"
@@ -271,6 +361,7 @@ async def change_password(
     
     current_user.password_hash = get_password_hash(payload.new_password)
     current_user.must_change_password = False
+    current_user.is_demo_creds = False
     await db.commit()
     await db.refresh(current_user)
 

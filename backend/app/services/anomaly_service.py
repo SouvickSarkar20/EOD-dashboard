@@ -1,6 +1,6 @@
 import uuid
 import numpy as np
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, distinct, desc, and_
@@ -116,7 +116,7 @@ class AnomalyService:
                                 "decline_percentage": round(drop_pct, 1),
                                 "threshold_percentage": threshold_decline_pct,
                             },
-                            detected_at=datetime.utcnow().isoformat()
+                            detected_at=datetime.now(timezone.utc).isoformat()
                         )
                     )
         return anomalies
@@ -180,7 +180,7 @@ class AnomalyService:
                 last_active_str = str(last_date) if last_date else "No recorded history"
                 anomalies.append(
                     AnomalyItem(
-                        id=f"silent_st_{r.station_id}_{ref_date}",
+                        id=f"silent_st_{r.station_id}_{month}",
                         type="SILENT_STATION",
                         severity=severity,
                         title=f"Silent Station: {r.station_id} ({silent_days} days inactive)",
@@ -201,7 +201,7 @@ class AnomalyService:
                             "silent_days": silent_days,
                             "threshold_days": silent_days_threshold
                         },
-                        detected_at=datetime.utcnow().isoformat()
+                        detected_at=datetime.now(timezone.utc).isoformat()
                     )
                 )
         return anomalies
@@ -289,7 +289,7 @@ class AnomalyService:
                             "p10_threshold": round(p10_threshold, 1),
                             "average_enrollment": round(avg_enrollment, 1)
                         },
-                        detected_at=datetime.utcnow().isoformat()
+                        detected_at=datetime.now(timezone.utc).isoformat()
                     )
                 )
         return anomalies
@@ -376,7 +376,7 @@ class AnomalyService:
                         "operator_code": r.operator_code,
                         "total_enrollment": r.total_enrollment
                     },
-                    detected_at=datetime.utcnow().isoformat()
+                    detected_at=datetime.now(timezone.utc).isoformat()
                 )
             )
         return anomalies
@@ -391,9 +391,12 @@ class AnomalyService:
         anomaly_type: Optional[str] = None,
         severity: Optional[str] = None,
         threshold_decline_pct: float = 20.0,
-        silent_days_threshold: int = 7
+        silent_days_threshold: int = 7,
+        summary_only: bool = False,
+        page: int = 1,
+        page_size: int = 50
     ) -> AnomalyListResponse:
-        """Fetch all detected anomalies with filtering, severity sorting, and counts."""
+        """Fetch all detected anomalies with filtering, severity sorting, pagination, and counts."""
         if not month:
             months_stmt = select(distinct(MonthlySummary.enroll_month)).order_by(desc(MonthlySummary.enroll_month))
             months = (await db.execute(months_stmt)).scalars().all()
@@ -428,6 +431,9 @@ class AnomalyService:
         medium_count = sum(1 for i in items if i.severity == "MEDIUM")
         low_count = sum(1 for i in items if i.severity == "LOW")
 
+        start_idx = (page - 1) * page_size
+        paginated_items = [] if summary_only else items[start_idx : start_idx + page_size]
+
         return AnomalyListResponse(
             total_anomalies=len(items),
             dm_decline_count=dm_decline_count,
@@ -437,7 +443,7 @@ class AnomalyService:
             high_severity_count=high_count,
             medium_severity_count=medium_count,
             low_severity_count=low_count,
-            items=items
+            items=paginated_items
         )
 
     @classmethod
@@ -449,7 +455,7 @@ class AnomalyService:
         dm_id: Optional[uuid.UUID] = None
     ) -> AnomalySummaryResponse:
         """Fetch lightweight aggregate counts of anomalies by type and severity."""
-        full_res = await cls.get_anomalies(db, month=month, district_id=district_id, dm_id=dm_id)
+        full_res = await cls.get_anomalies(db, month=month, district_id=district_id, dm_id=dm_id, summary_only=True)
 
         by_type = {
             "DM_DECLINE": full_res.dm_decline_count,

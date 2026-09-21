@@ -48,3 +48,36 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
         return payload
     except JWTError:
         return None
+
+SENSITIVE_AUDIT_KEYS = {
+    "password", "old_password", "new_password", "current_password",
+    "secret", "totp_secret", "access_token", "refresh_token", "token", "password_hash"
+}
+
+def sanitize_audit_details(details: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Sanitize audit details dict to prevent leaking passwords, tokens, or TOTP secrets."""
+    if not details or not isinstance(details, dict):
+        return details if isinstance(details, dict) else {}
+    sanitized = {}
+    for k, v in details.items():
+        if k.lower() in SENSITIVE_AUDIT_KEYS:
+            sanitized[k] = "[REDACTED]"
+        elif isinstance(v, dict):
+            sanitized[k] = sanitize_audit_details(v)
+        else:
+            sanitized[k] = v
+    return sanitized
+
+def validate_month_param(month: Optional[int]) -> Optional[int]:
+    """Validate integer month parameter in YYYYMM format (e.g. 202601)."""
+    if month is None:
+        return None
+    year = month // 100
+    m = month % 100
+    if year < 2000 or year > 2100 or m < 1 or m > 12:
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid month '{month}'. Month must be in YYYYMM format with valid month 01-12 (e.g., 202601)."
+        )
+    return month

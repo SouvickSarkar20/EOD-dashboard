@@ -1,6 +1,6 @@
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import String, DateTime, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,6 +14,9 @@ class UserRole(str, enum.Enum):
 class UserStatus(str, enum.Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
+
+def utc_now():
+    return datetime.utcnow()
 
 class AdminUser(Base):
     __tablename__ = "admin_users"
@@ -29,6 +32,6 @@ class AdminUser(Base):
     is_2fa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)  # Admin 2FA toggle status via Supabase
     is_demo_creds: Mapped[bool] = mapped_column(Boolean, default=True)    # Flag indicating if Admin is using initial demo creds
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
