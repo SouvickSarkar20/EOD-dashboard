@@ -13,7 +13,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
+  Legend,
+  Label
 } from 'recharts';
 import {
   BarChart3,
@@ -336,10 +337,25 @@ export function Overview() {
                     nameKey="category"
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
+                    innerRadius={70}
+                    outerRadius={100}
                     paddingAngle={3}
+                    labelLine={true}
+                    label={({ category, count, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
+                    style={{ fontSize: '11px', fontWeight: 600 }}
                   >
+                    <Label 
+                      value={data.category_mix.reduce((sum, item) => sum + item.count, 0).toLocaleString()} 
+                      position="center" 
+                      dy={-5}
+                      style={{ fontSize: '24px', fontWeight: 'bold', fill: '#0F172A' }}
+                    />
+                    <Label 
+                      value="Total" 
+                      position="center" 
+                      dy={15}
+                      style={{ fontSize: '12px', fill: '#64748B' }}
+                    />
                     {data.category_mix.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
