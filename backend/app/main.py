@@ -48,11 +48,11 @@ app.include_router(anomalies.router, prefix="/api/anomalies", tags=["Anomaly Det
 app.include_router(exports.router, prefix="/api/exports", tags=["Data Exports"])
 app.include_router(audit_log.router, prefix="/api/audit-log", tags=["Audit Log"])
 
-@app.get("/api/health", tags=["Health"])
+@app.api_route("/api/health", methods=["GET", "HEAD"], tags=["Health"])
 async def health_check():
     return {"status": "healthy", "service": "EOD Dashboard API"}
 
-@app.get("/", tags=["Root"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Root"])
 async def root():
     return {
         "message": "Welcome to EOD Dashboard API",
