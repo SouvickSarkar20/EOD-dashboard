@@ -33,6 +33,7 @@ export function FilterBar() {
     district_managers: [],
   });
   const [loading, setLoading] = useState(false);
+  const hasInitialized = React.useRef(false);
 
   useEffect(() => {
     fetchFilterOptions();
@@ -50,9 +51,10 @@ export function FilterBar() {
       const data: FilterOptionsResponse = response.data;
       setOptions(data);
 
-      if (!month && data.available_months.length > 0) {
+      if (!hasInitialized.current && !month && data.available_months.length > 0) {
         setMonth(data.available_months[0]);
       }
+      hasInitialized.current = true;
     } catch (err) {
       console.error('Failed to load filter options:', err);
     } finally {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   BarChart3,
@@ -9,11 +9,14 @@ import {
   Download,
   Settings,
   Shield,
+  X,
+  ChevronRight
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 export function Sidebar() {
   const user = useAuthStore((s) => s.user);
+  const [isOpen, setIsOpen] = useState(true);
 
   const navItems = [
     {
@@ -68,69 +71,114 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-72 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen border-r border-slate-800">
-      
-      {/* App Branding */}
-      <div className="p-6 border-b border-slate-800 flex items-center space-x-3.5">
-        <div className="p-3 rounded-xl bg-blue-700 text-white shadow-md">
-          <Shield className="w-7 h-7" />
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-white tracking-tight leading-tight">
-            EOD Operations
-          </h2>
-          <span className="text-xs text-slate-400 font-medium">
-            Supervision & Analytics
-          </span>
-        </div>
-      </div>
-
-      {/* Navigation List */}
-      <nav className="flex-1 p-5 space-y-2 overflow-y-auto">
-        <div className="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-          Navigation Menu
-        </div>
-
-        {navItems.map((item) => {
-          if (item.adminOnly && user?.role !== 'admin') {
-            return null;
-          }
-
-          const Icon = item.icon;
-
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex items-center space-x-3.5 px-4 py-3.5 rounded-xl text-sm font-semibold transition ${
-                  isActive
-                    ? 'bg-blue-800 text-white shadow-md font-bold'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
+    <aside className={`${isOpen ? 'w-72' : 'w-20'} bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen border-r border-slate-800 transition-all duration-300 relative`}>
+      {isOpen ? (
+        <>
+          {/* App Branding */}
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between overflow-hidden whitespace-nowrap">
+            <div className="flex items-center space-x-3.5">
+              <div className="p-3 rounded-xl bg-blue-700 text-white shadow-md">
+                <Shield className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white tracking-tight leading-tight">
+                  EOD Operations
+                </h2>
+                <span className="text-xs text-slate-400 font-medium">
+                  Supervision & Analytics
+                </span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsOpen(false)} 
+              className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 flex-shrink-0 ml-1 transition"
+              title="Close Sidebar"
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-      {/* User Status Card at Sidebar Bottom */}
-      <div className="p-5 border-t border-slate-800 bg-slate-950/50">
-        <div className="flex items-center space-x-3.5">
-          <div className="w-10 h-10 rounded-full bg-blue-900 text-white font-bold flex items-center justify-center text-sm shadow">
-            {user?.name?.charAt(0) || 'U'}
+          {/* Navigation List */}
+          <nav className="flex-1 p-5 space-y-2 overflow-y-auto overflow-x-hidden">
+            <div className="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+              Navigation Menu
+            </div>
+
+            {navItems.map((item) => {
+              if (item.adminOnly && user?.role !== 'admin') {
+                return null;
+              }
+
+              const Icon = item.icon;
+
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `flex items-center space-x-3.5 px-4 py-3.5 rounded-xl text-sm font-semibold transition whitespace-nowrap overflow-hidden ${
+                      isActive
+                        ? 'bg-blue-800 text-white shadow-md font-bold'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`
+                  }
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          {/* User Status Card at Sidebar Bottom */}
+          <div className="p-5 border-t border-slate-800 bg-slate-950/50 whitespace-nowrap overflow-hidden">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-full bg-blue-900 text-white font-bold flex flex-shrink-0 items-center justify-center text-sm shadow">
+                {user?.name?.charAt(0) || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white truncate">{user?.name}</p>
+                <p className="text-xs text-slate-400 truncate capitalize">{user?.role}</p>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white truncate">{user?.name}</p>
-            <p className="text-xs text-slate-400 truncate capitalize">{user?.role}</p>
-          </div>
+        </>
+      ) : (
+        <div className="flex flex-col items-center py-6 h-full">
+          <button 
+            onClick={() => setIsOpen(true)} 
+            className="p-3 rounded-xl bg-blue-700 text-white shadow-md mb-8 hover:bg-blue-600 transition"
+            title="Open Sidebar"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+          
+          <nav className="flex-1 space-y-4 flex flex-col w-full px-3 overflow-y-auto overflow-x-hidden">
+            {navItems.map((item) => {
+              if (item.adminOnly && user?.role !== 'admin') return null;
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  title={item.label}
+                  className={({ isActive }) =>
+                    `flex justify-center p-3 rounded-xl transition ${
+                      isActive
+                        ? 'bg-blue-800 text-white shadow-md'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`
+                  }
+                >
+                  <Icon className="w-6 h-6 flex-shrink-0" />
+                </NavLink>
+              );
+            })}
+          </nav>
         </div>
-      </div>
-
+      )}
     </aside>
   );
 }

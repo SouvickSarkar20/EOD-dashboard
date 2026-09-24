@@ -6,7 +6,7 @@ import { FilterBar } from './FilterBar';
 
 export function DashboardLayout() {
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans antialiased">
+    <div className="flex h-screen bg-slate-50 font-sans antialiased overflow-hidden">
       {/* Fixed Left Sidebar */}
       <Sidebar />
 
