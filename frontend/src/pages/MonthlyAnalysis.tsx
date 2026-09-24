@@ -287,12 +287,18 @@ export function MonthlyAnalysis() {
 
                     {/* Fee Category Breakdown */}
                     <td className="py-4 px-4">
-                      <div className="flex flex-wrap gap-1 text-[11px]">
-                        {r.bmu_100 > 0 && <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-bold border border-blue-200">BMU 100: {r.bmu_100}</span>}
-                        {r.dmu_50 > 0 && <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-900 font-bold border border-indigo-200">DMU 50: {r.dmu_50}</span>}
-                        {r.mbu_0 > 0 && <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-bold border border-slate-200">MBU 0: {r.mbu_0}</span>}
-                        {r.mbu_100 > 0 && <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold border border-purple-200">MBU 100: {r.mbu_100}</span>}
-                        {r.new_0 > 0 && <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 font-bold border border-emerald-200">NEW 0: {r.new_0}</span>}
+                      <div className="flex flex-wrap gap-1.5 text-[11px]">
+                        {r.bmu_100 > 0 && <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-bold border border-blue-200" title="BMU @ 100">BMU @ 100: {r.bmu_100} (₹{(r.bmu_100 * 100).toLocaleString()})</span>}
+                        {r.bmu_125 > 0 && <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-bold border border-blue-200" title="BMU @ 125">BMU @ 125: {r.bmu_125} (₹{(r.bmu_125 * 125).toLocaleString()})</span>}
+                        
+                        {r.dmu_50 > 0 && <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-900 font-bold border border-indigo-200" title="DMU @ 50">DMU @ 50: {r.dmu_50} (₹{(r.dmu_50 * 50).toLocaleString()})</span>}
+                        {r.dmu_75 > 0 && <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-900 font-bold border border-indigo-200" title="DMU @ 75">DMU @ 75: {r.dmu_75} (₹{(r.dmu_75 * 75).toLocaleString()})</span>}
+                        
+                        {r.mbu_0 > 0 && <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold border border-purple-200" title="MBU @">MBU @: {r.mbu_0} (₹0)</span>}
+                        {r.mbu_100 > 0 && <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold border border-purple-200" title="MBU @ 100">MBU @ 100: {r.mbu_100} (₹{(r.mbu_100 * 100).toLocaleString()})</span>}
+                        {r.mbu_125 > 0 && <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold border border-purple-200" title="MBU @ 125">MBU @ 125: {r.mbu_125} (₹{(r.mbu_125 * 125).toLocaleString()})</span>}
+                        
+                        {r.new_0 > 0 && <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 font-bold border border-emerald-200" title="NEW @">NEW @: {r.new_0} (₹0)</span>}
                       </div>
                     </td>
 

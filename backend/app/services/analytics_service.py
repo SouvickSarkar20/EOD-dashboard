@@ -607,18 +607,30 @@ class AnalyticsService:
 
         # 4. Category Mix
         mix_stmt = select(
-            func.coalesce(func.sum(DailyRecord.bmu_100 + DailyRecord.bmu_125), 0),
-            func.coalesce(func.sum(DailyRecord.dmu_50 + DailyRecord.dmu_75), 0),
-            func.coalesce(func.sum(DailyRecord.mbu_0 + DailyRecord.mbu_100 + DailyRecord.mbu_125), 0),
-            func.coalesce(func.sum(DailyRecord.new_0), 0)
+            func.coalesce(
+                func.sum(DailyRecord.bmu_100 + DailyRecord.bmu_125), 0
+            ),
+           func.coalesce(
+                func.sum(DailyRecord.dmu_50 + DailyRecord.dmu_75), 0
+            ),
+            func.coalesce(
+                func.sum(
+                   DailyRecord.mbu_0 +
+                   DailyRecord.mbu_100 +
+                   DailyRecord.mbu_125
+                ), 0
+            ),
+            func.coalesce(
+                func.sum(DailyRecord.new_0), 0
+            )
         ).select_from(base_stmt.subquery())
 
         mix_res = (await db.execute(mix_stmt)).first()
+
         bmu = mix_res[0] if mix_res else 0
         dmu = mix_res[1] if mix_res else 0
         mbu = mix_res[2] if mix_res else 0
         new_tot = mix_res[3] if mix_res else 0
-        grand_cat = bmu + dmu + mbu + new_tot
 
         cat_mix = [
             CategoryMixItem(category="BMU", count=bmu),
@@ -628,12 +640,12 @@ class AnalyticsService:
         ]
 
         return DailySummaryResponse(
-            total_enrollment=tot_enroll,
-            total_revenue=tot_rev,
-            active_days_count=active_days,
-            daily_trend=trend_points,
-            top_stations=top_stations,
-            category_mix=cat_mix
+           total_enrollment=tot_enroll,
+           total_revenue=tot_rev,
+           active_days_count=active_days,
+           daily_trend=trend_points,
+           top_stations=top_stations,
+           category_mix=cat_mix
         )
 
     @staticmethod

@@ -35,9 +35,11 @@ export function Login() {
       } else {
         setAuth(data.user, data.access_token);
         
-        if (data.user.role === 'admin' && (data.user.is_demo_creds || data.is_demo_creds)) {
+        if (false && data.user.role === 'admin' && (data.user.is_demo_creds || data.is_demo_creds)) {
+          // Temporarily disabled for testing
           navigate('/update-credentials');
-        } else if (data.user.must_change_password) {
+        } else if (false && data.user.must_change_password) {
+          // Temporarily disabled for testing
           navigate('/change-password');
         } else {
           navigate('/dashboard');

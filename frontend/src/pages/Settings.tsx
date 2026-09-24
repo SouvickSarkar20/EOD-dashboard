@@ -186,23 +186,25 @@ export function Settings() {
 
           </div>
 
-          {/* Quick Actions */}
-          <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <span className="text-sm font-bold text-slate-900">Account Password</span>
-              <p className="text-xs text-slate-500">Update your login password regularly to protect your operational data.</p>
+          {/* Quick Actions (Temporarily hidden for testing) */}
+          {false && (
+            <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <span className="text-sm font-bold text-slate-900">Account Password</span>
+                <p className="text-xs text-slate-500">Update your login password regularly to protect your operational data.</p>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => navigate('/change-password')}
+                className="flex items-center space-x-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
+              >
+                <Key className="w-4 h-4" />
+                <span>Change Account Password</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </button>
             </div>
-            
-            <button
-              type="button"
-              onClick={() => navigate('/change-password')}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
-            >
-              <Key className="w-4 h-4" />
-              <span>Change Account Password</span>
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Security & 2FA Card (1 col) */}
