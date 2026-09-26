@@ -749,7 +749,7 @@ class AnalyticsService:
         # Available months
         months_stmt = select(distinct(MonthlySummary.enroll_month)).order_by(desc(MonthlySummary.enroll_month))
         months = (await db.execute(months_stmt)).scalars().all()
-        selected_m = month if month else (months[0] if months else None)
+        selected_m = month
 
         # Base station assignment subquery for period-aware cascading
         sa_stmt = select(StationAssignment).select_from(StationAssignment)

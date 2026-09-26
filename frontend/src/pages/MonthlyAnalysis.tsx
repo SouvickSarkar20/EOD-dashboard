@@ -233,7 +233,14 @@ export function MonthlyAnalysis() {
                 <th className="py-3.5 px-4">Operator Code</th>
                 <th className="py-3.5 px-4">District</th>
                 <th className="py-3.5 px-4">District Manager</th>
-                <th className="py-3.5 px-4">Fee Mix Breakdown</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">BMU @ 100</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">BMU @ 125</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">DMU @ 50</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">DMU @ 75</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">MBU @ 0</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">MBU @ 100</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">MBU @ 125</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">NEW @ 0</th>
                 <th className="py-3.5 px-4 text-right">Total Enrollments</th>
                 <th className="py-3.5 px-4 text-right">Amount (₹)</th>
               </tr>
@@ -241,7 +248,7 @@ export function MonthlyAnalysis() {
             <tbody className="divide-y divide-slate-100 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-500">
+                  <td colSpan={15} className="text-center py-12 text-slate-500">
                     <div className="flex items-center justify-center space-x-2 text-sm font-semibold">
                       <Loader2 className="w-5 h-5 animate-spin text-blue-900" />
                       <span>Loading Monthly Records...</span>
@@ -285,21 +292,30 @@ export function MonthlyAnalysis() {
                       )}
                     </td>
 
-                    {/* Fee Category Breakdown */}
-                    <td className="py-4 px-4">
-                      <div className="flex flex-wrap gap-1.5 text-[11px]">
-                        {r.bmu_100 > 0 && <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-bold border border-blue-200" title="BMU @ 100">BMU @ 100: {r.bmu_100} (₹{(r.bmu_100 * 100).toLocaleString()})</span>}
-                        {r.bmu_125 > 0 && <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-bold border border-blue-200" title="BMU @ 125">BMU @ 125: {r.bmu_125} (₹{(r.bmu_125 * 125).toLocaleString()})</span>}
-                        
-                        {r.dmu_50 > 0 && <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-900 font-bold border border-indigo-200" title="DMU @ 50">DMU @ 50: {r.dmu_50} (₹{(r.dmu_50 * 50).toLocaleString()})</span>}
-                        {r.dmu_75 > 0 && <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-900 font-bold border border-indigo-200" title="DMU @ 75">DMU @ 75: {r.dmu_75} (₹{(r.dmu_75 * 75).toLocaleString()})</span>}
-                        
-                        {r.mbu_0 > 0 && <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold border border-purple-200" title="MBU @ 0">MBU @ 0: {r.mbu_0} (₹0)</span>}
-                        {r.mbu_100 > 0 && <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold border border-purple-200" title="MBU @ 100">MBU @ 100: {r.mbu_100} (₹{(r.mbu_100 * 100).toLocaleString()})</span>}
-                        {r.mbu_125 > 0 && <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-bold border border-purple-200" title="MBU @ 125">MBU @ 125: {r.mbu_125} (₹{(r.mbu_125 * 125).toLocaleString()})</span>}
-                        
-                        {r.new_0 > 0 && <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 font-bold border border-emerald-200" title="NEW @ 0">NEW @ 0: {r.new_0} (₹0)</span>}
-                      </div>
+                    {/* Fee Category Breakdowns */}
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.bmu_100 > 0 ? <span className="text-blue-900 font-bold">{r.bmu_100} (₹{(r.bmu_100 * 100).toLocaleString()})</span> : <span className="text-slate-400 font-bold">0</span>}
+                    </td>
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.bmu_125 > 0 ? <span className="text-blue-900 font-bold">{r.bmu_125} (₹{(r.bmu_125 * 125).toLocaleString()})</span> : <span className="text-slate-400 font-bold">0</span>}
+                    </td>
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.dmu_50 > 0 ? <span className="text-indigo-900 font-bold">{r.dmu_50} (₹{(r.dmu_50 * 50).toLocaleString()})</span> : <span className="text-slate-400 font-bold">0</span>}
+                    </td>
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.dmu_75 > 0 ? <span className="text-indigo-900 font-bold">{r.dmu_75} (₹{(r.dmu_75 * 75).toLocaleString()})</span> : <span className="text-slate-400 font-bold">0</span>}
+                    </td>
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.mbu_0 > 0 ? <span className="text-purple-900 font-bold">{r.mbu_0} (₹0)</span> : <span className="text-slate-400 font-bold">0</span>}
+                    </td>
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.mbu_100 > 0 ? <span className="text-purple-900 font-bold">{r.mbu_100} (₹{(r.mbu_100 * 100).toLocaleString()})</span> : <span className="text-slate-400 font-bold">0</span>}
+                    </td>
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.mbu_125 > 0 ? <span className="text-purple-900 font-bold">{r.mbu_125} (₹{(r.mbu_125 * 125).toLocaleString()})</span> : <span className="text-slate-400 font-bold">0</span>}
+                    </td>
+                    <td className="py-4 px-2 text-center font-mono text-[11px] whitespace-nowrap">
+                      {r.new_0 > 0 ? <span className="text-emerald-900 font-bold">{r.new_0} (₹0)</span> : <span className="text-slate-400 font-bold">0</span>}
                     </td>
 
                     {/* Total Enrollments */}
@@ -316,7 +332,7 @@ export function MonthlyAnalysis() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-400 text-sm">
+                  <td colSpan={15} className="text-center py-12 text-slate-400 text-sm">
                     No monthly station records found for the selected filter parameters.
                   </td>
                 </tr>
